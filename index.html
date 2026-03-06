@@ -237,10 +237,14 @@ body{font-family:'Roboto',sans-serif;background:#f5f5f5;color:#212121;font-size:
 
 /* RATE TABLE STYLES */
 .rtable-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-.rtable{width:100%;min-width:650px;border-collapse:collapse;background:#fff;}
-.rtable th{background:#fff;border-bottom:2px solid #e0e0e0;padding:10px 12px;font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;position:sticky;top:0;z-index:10;}
-.rtable td{padding:11px 12px;border-bottom:1px solid #f5f5f5;font-size:13px;vertical-align:middle;white-space:nowrap;}
-.rtable tr:hover td{background:#f8f9ff;} .rtable td{cursor:pointer;}
+.rtable{width:100%;min-width:620px;border-collapse:collapse;background:#fff;}
+.rtable thead tr{background:linear-gradient(90deg,#1a73e8,#0d47a1);}
+.rtable th{padding:12px 14px;font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;position:sticky;top:0;z-index:10;text-align:center;}
+.rtable th:first-child{text-align:left;border-radius:0;}
+.rtable td{padding:12px 14px;border-bottom:1px solid #f0f0f0;font-size:13px;vertical-align:middle;white-space:nowrap;text-align:center;cursor:pointer;}
+.rtable td:first-child{text-align:left;}
+.rtable tbody tr:nth-child(even) td{background:#fafbff;}
+.rtable tbody tr:hover td{background:#e8f0fe !important;}
 .rt-party{color:#6200ea;font-weight:700;font-size:13px;}
 .rt-new{color:#212121;font-weight:700;font-size:14px;display:flex;align-items:center;gap:5px;}
 .rt-old{color:#e65100;font-style:italic;font-weight:500;font-size:13px;}
@@ -810,8 +814,13 @@ function renderRates(q=''){
 
   el.innerHTML=`<div class="rtable-wrap"><table class="rtable">
     <thead><tr>
-      <th>Party Name</th><th>New Rate</th><th>Old Rate</th>
-      <th>Difference</th><th>Change Date</th><th>Item</th><th></th>
+      <th style="text-align:left;padding-left:16px;">🏭 Party Name</th>
+      <th>● New Rate</th>
+      <th>Old Rate</th>
+      <th>± Diff</th>
+      <th>📅 Date</th>
+      <th>📦 Item</th>
+      <th></th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
