@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a73e8">
+<link rel="manifest" id="pwa-manifest">
+<link rel="apple-touch-icon" id="apple-icon">
+<title>Rate Update — SURYAANS PAPER</title>
+<script>
+function genIcon(size) {
+  var c=document.createElement('canvas'); c.width=size; c.height=size;
+  var x=c.getContext('2d'), r=size*0.20;
+  x.beginPath(); x.moveTo(r,0); x.lineTo(size-r,0);
+  x.quadraticCurveTo(size,0,size,r); x.lineTo(size,size-r);
+  x.quadraticCurveTo(size,size,size-r,size); x.lineTo(r,size);
+  x.quadraticCurveTo(0,size,0,size-r); x.lineTo(0,r);
+  x.quadraticCurveTo(0,0,r,0); x.closePath();
+  var g=x.createLinearGradient(0,0,size,size);
+  g.addColorStop(0,'#1a73e8'); g.addColorStop(1,'#0d47a1');
+  x.fillStyle=g; x.fill();
+  x.fillStyle='rgba(255,255,255,0.13)';
+  x.beginPath(); x.arc(size/2,size*0.40,size*0.27,0,Math.PI*2); x.fill();
+  x.font='bold '+Math.round(size*0.34)+'px Arial';
+  x.fillStyle='#ffffff'; x.textAlign='center'; x.textBaseline='middle';
+  x.fillText('♻',size/2,size*0.40);
+  x.font='bold '+Math.round(size*0.11)+'px Arial';
+  x.fillStyle='rgba(255,255,255,0.95)';
+  x.fillText('RATE UPDATE',size/2,size*0.72);
+  x.font=Math.round(size*0.085)+'px Arial';
+  x.fillStyle='rgba(255,255,255,0.70)';
+  x.fillText('SURYAANS PAPER',size/2,size*0.84);
+  return c.toDataURL('image/png');
+}
+document.addEventListener('DOMContentLoaded',function(){
+  var i192=genIcon(192), i512=genIcon(512);
+  document.getElementById('apple-icon').href=i192;
+  var m={name:'Rate Update - SURYAANS PAPER',short_name:'Rate Update',
+    start_url:'./',display:'standalone',background_color:'#1a73e8',
+    theme_color:'#1a73e8',orientation:'portrait',
+    icons:[{src:i192,sizes:'192x192',type:'image/png',purpose:'any maskable'},
+           {src:i512,sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
+  var blob=new Blob([JSON.stringify(m)],{type:'application/json'});
+  document.getElementById('pwa-manifest').href=URL.createObjectURL(blob);
+});
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<!-- FIREBASE SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Roboto',sans-serif;background:#f5f5f5;color:#212121;font-size:14px;}
+#loadingScreen{position:fixed;inset:0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:16px;}
+.spinner{width:44px;height:44px;border:4px solid #e0e0e0;border-top-color:#1a73e8;border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-txt{font-size:14px;color:#666;}
+#loginScreen{display:none;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1a73e8,#0d47a1);}
+.lbox{background:#fff;border-radius:14px;padding:36px 28px;width:92%;max-width:380px;box-shadow:0 12px 48px #0004;}
+.llogo{font-size:22px;font-weight:700;color:#1a73e8;}.lco{font-size:13px;color:#555;font-weight:500;}
+.ltitle{font-size:15px;font-weight:600;color:#333;margin:18px 0 16px;text-align:center;border-bottom:1px solid #f0f0f0;padding-bottom:14px;}
+.llbl{font-size:12px;color:#666;font-weight:500;margin-bottom:5px;display:block;}
+.linput{width:100%;border:1px solid #ddd;border-radius:6px;padding:10px 12px;font-size:14px;outline:none;margin-bottom:14px;transition:border-color .2s;}
+.linput:focus{border-color:#1a73e8;}
+.lbtn{width:100%;background:#1a73e8;color:#fff;border:none;border-radius:6px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;}
+.lbtn:hover{background:#1558b0;}.lbtn:disabled{background:#aaa;}
+.lerr{color:#d93025;font-size:12px;text-align:center;margin-top:8px;min-height:16px;}
+.lfooter{font-size:11px;color:#bbb;text-align:center;margin-top:18px;}
+.lbadge{display:flex;align-items:center;gap:6px;font-size:11px;color:#34a853;background:#e6f4ea;padding:6px 12px;border-radius:20px;width:fit-content;margin:0 auto 18px;}
+.ldot{width:7px;height:7px;border-radius:50%;background:#34a853;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+#app{display:none;min-height:100vh;background:#f5f5f5;}
+.appbar{background:#1a73e8;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:56px;box-shadow:0 2px 8px #0002;position:sticky;top:0;z-index:100;}
+.appbar-title{font-size:18px;font-weight:500;}
+.ibtn{width:40px;height:40px;border-radius:50%;border:none;background:transparent;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.ibtn:hover{background:#ffffff20;}
+.uchip{background:#ffffff25;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;}
+.rdot{width:8px;height:8px;border-radius:50%;}
+.sbar{padding:5px 16px;font-size:11px;display:flex;align-items:center;gap:6px;}
+.sbar.on{background:#e8f5e9;border-bottom:1px solid #c8e6c9;color:#2e7d32;}
+.sbar.off{background:#fff3e0;border-bottom:1px solid #ffe0b2;color:#e65100;}
+.sdot{width:6px;height:6px;border-radius:50%;animation:pulse 1.5s infinite;}
+.sdot.g{background:#34a853;}.sdot.o{background:#ff9800;}
+.nbell{position:relative;cursor:pointer;}
+.nbadge{position:absolute;top:-2px;right:-2px;background:#ea4335;color:#fff;border-radius:50%;width:16px;height:16px;font-size:10px;font-weight:700;display:none;align-items:center;justify-content:center;}
+.nbadge.show{display:flex;}
+.npanel{position:fixed;top:56px;right:0;width:310px;max-height:420px;background:#fff;border:1px solid #e0e0e0;border-radius:0 0 0 12px;box-shadow:0 8px 24px #0002;z-index:300;display:none;flex-direction:column;}
+.npanel.show{display:flex;}
+.nphead{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;background:#1a73e8;color:#fff;}
+.nplist{overflow-y:auto;flex:1;}
+.nitem{padding:12px 16px;border-bottom:1px solid #f5f5f5;display:flex;gap:10px;}
+.nitem.unread{background:#e8f0fe;}
+.ni-icon{font-size:20px;flex-shrink:0;}
+.ni-title{font-size:13px;font-weight:600;color:#212121;margin-bottom:2px;}
+.ni-msg{font-size:12px;color:#555;line-height:1.5;}
+.ni-time{font-size:11px;color:#999;margin-top:3px;}
+.nempty{padding:30px;text-align:center;color:#999;font-size:13px;}
+.npopup{position:fixed;top:64px;left:12px;right:12px;background:#fff;border-radius:14px;box-shadow:0 8px 32px #0003,0 0 0 1px #e0e0e0;z-index:500;overflow:hidden;transform:translateY(-120px);opacity:0;transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .25s ease;pointer-events:none;max-width:480px;margin:0 auto;}
+.npopup.in{transform:translateY(0);opacity:1;pointer-events:all;}
+.npbar{height:4px;background:linear-gradient(90deg,#1a73e8,#34a853);}
+.npinner{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;}
+.npicon{font-size:26px;flex-shrink:0;}
+.npbody{flex:1;min-width:0;}
+.npapp{font-size:10px;font-weight:700;color:#1a73e8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:1px;}
+.nptitle{font-size:13px;font-weight:700;color:#212121;margin-bottom:2px;}
+.npmsg{font-size:12px;color:#555;line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.nptime{font-size:10px;color:#aaa;margin-top:3px;}
+.npcls{background:transparent;border:none;color:#bbb;font-size:18px;cursor:pointer;flex-shrink:0;}
+.bnav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e0e0e0;display:flex;z-index:100;box-shadow:0 -2px 8px #0001;}
+.bni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;color:#757575;font-size:10px;font-weight:500;transition:color .2s;}
+.bni.active{color:#1a73e8;}
+.bni-icon{font-size:20px;margin-bottom:2px;}
+.main{padding:0 0 80px 0;}
+.page{display:none;}.page.active{display:block;}
+.sbar2{background:#fff;padding:8px 12px;border-bottom:1px solid #e0e0e0;display:flex;gap:8px;align-items:center;}
+.sinput{flex:1;border:1px solid #ddd;border-radius:20px;padding:7px 14px;font-size:13px;outline:none;background:#f8f9fa;}
+.sinput:focus{border-color:#1a73e8;background:#fff;}
+.lview{background:#fff;}
+.lhdr{display:grid;padding:10px 12px;border-bottom:2px solid #1a73e8;font-size:11px;font-weight:700;color:#1a73e8;text-transform:uppercase;letter-spacing:.5px;background:#e8f0fe;}
+.lrow{display:grid;padding:10px 12px;border-bottom:1px solid #f0f0f0;align-items:center;cursor:pointer;transition:background .15s;}
+.lrow:hover{background:#f5f5f5;}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:3px;flex-shrink:0;}
+.dot-r{background:#ea4335;}.dot-y{background:#fbbc04;}.dot-g{background:#34a853;}
+.rnew{color:#ea4335;font-weight:700;font-size:15px;display:flex;align-items:center;gap:3px;}
+.rold{color:#e65100;font-style:italic;font-weight:500;}
+.pname{color:#673ab7;font-weight:700;font-size:13px;}
+.dpos{color:#34a853;font-weight:600;}.dneg{color:#ea4335;font-weight:600;}
+.cdate{color:#f57f17;font-weight:500;display:flex;align-items:center;gap:3px;font-size:13px;}
+.rarr{color:#bbb;font-size:16px;}
+.fab{position:fixed;bottom:82px;right:20px;width:56px;height:56px;border-radius:50%;background:#1a73e8;color:#fff;border:none;font-size:28px;cursor:pointer;box-shadow:0 4px 16px #1a73e840;display:flex;align-items:center;justify-content:center;z-index:90;}
+.fab:hover{background:#1558b0;}
+.doverlay{display:none;position:fixed;inset:0;background:#f5f5f5;z-index:150;overflow-y:auto;}
+.dbar{background:#fff;border-bottom:1px solid #e0e0e0;display:flex;align-items:center;justify-content:space-between;padding:0 8px;height:56px;position:sticky;top:0;z-index:50;}
+.bbtn{width:40px;height:40px;border-radius:50%;border:none;background:transparent;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;color:#333;}
+.bbtn:hover{background:#f0f0f0;}
+.dhdr{background:#fff;padding:16px 20px;border-bottom:1px solid #e0e0e0;}
+.dname{font-size:20px;font-weight:600;}
+.fcard{background:#fff;padding:14px 20px;border-bottom:1px solid #f0f0f0;}
+.flbl{font-size:11px;color:#888;margin-bottom:4px;}
+.fvp{color:#673ab7;font-weight:700;font-size:18px;}
+.fvid{font-family:monospace;font-size:13px;border:1.5px solid #1a73e8;padding:8px 12px;border-radius:4px;display:inline-block;color:#1a73e8;}
+.fvo{color:#e65100;font-style:italic;font-weight:600;font-size:17px;}
+.fvn{color:#ea4335;font-weight:700;font-size:17px;display:flex;align-items:center;gap:6px;}
+.fnav{display:flex;align-items:center;gap:8px;}
+.fnavb{width:32px;height:32px;border-radius:50%;border:1px solid #ddd;background:#fff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:#555;}
+.tsc{color:#555;font-size:12px;}
+.phsec{background:#fff;margin-top:8px;}
+.phhdr{padding:12px 16px;border-bottom:1px solid #e0e0e0;display:flex;align-items:center;justify-content:space-between;background:#fafafa;}
+.phtitle{font-size:13px;font-weight:600;color:#333;display:flex;align-items:center;gap:8px;}
+.hcnt{background:#1a73e8;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:600;}
+.dg{border-bottom:1px solid #f0f0f0;}
+.dgh{padding:10px 16px;background:#f8f9fa;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:10px;cursor:pointer;}
+.dgh:hover{background:#f0f0f0;}
+.dgd{font-size:13px;font-weight:700;color:#1a73e8;}
+.dgs{font-size:11px;color:#888;margin-left:auto;}
+.dgt{color:#bbb;font-size:14px;transition:transform .2s;}
+.dgt.open{transform:rotate(90deg);}
+.tlrow{padding:12px 16px 12px 36px;border-bottom:1px solid #f9f9f9;display:flex;gap:12px;align-items:flex-start;position:relative;}
+.tlrow::before{content:'';position:absolute;left:24px;top:0;bottom:0;width:2px;background:#e8e8e8;}
+.tlrow:last-child::before{height:22px;}
+.tldot{width:12px;height:12px;border-radius:50%;position:absolute;left:19px;top:16px;z-index:1;}
+.tldot-r{background:#ea4335;box-shadow:0 0 0 3px #fce8e6;}
+.tldot-g{background:#34a853;box-shadow:0 0 0 3px #e6f4ea;}
+.tlcon{flex:1;}
+.tln{font-size:13px;font-weight:600;color:#333;margin-bottom:5px;}
+.tlrt{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px;}
+.tlo{color:#e65100;font-style:italic;font-size:13px;}
+.tla{color:#888;font-size:13px;}
+.tlnw{color:#ea4335;font-weight:700;font-size:15px;display:flex;align-items:center;gap:3px;}
+.tld{font-size:12px;font-weight:600;padding:2px 8px;border-radius:10px;}
+.tld-u{background:#e6f4ea;color:#34a853;}.tld-d{background:#fce8e6;color:#ea4335;}.tld-s{background:#f5f5f5;color:#888;}
+.tlm{font-size:11px;color:#999;display:flex;gap:12px;flex-wrap:wrap;}
+.tlb{color:#1a73e8;font-weight:500;}
+.tlts{color:#bbb;}
+.tlact{display:flex;gap:6px;margin-top:7px;}
+.tlbtn{font-size:11px;color:#1a73e8;border:1px solid #c5d8fb;background:#e8f0fe;border-radius:10px;padding:3px 10px;cursor:pointer;font-weight:600;}
+.tlbtn.del{color:#ea4335;border-color:#f5c6cb;background:#fce8e6;}
+.crc{background:#fff;margin-top:8px;}
+.crh{padding:10px 16px;background:#e8f0fe;border-bottom:1px solid #c5d8fb;font-size:12px;font-weight:700;color:#1a73e8;text-transform:uppercase;letter-spacing:.5px;}
+.crg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}
+.cri{padding:12px 16px;border-right:1px solid #f0f0f0;border-bottom:1px solid #f0f0f0;}
+.crin{font-size:11px;color:#888;margin-bottom:3px;}
+.crir{font-size:18px;font-weight:700;color:#ea4335;display:flex;align-items:center;gap:4px;}
+.crid{font-size:10px;color:#fbbc04;font-weight:500;margin-top:2px;}
+.moverlay{display:none;position:fixed;inset:0;background:#00000070;z-index:200;align-items:flex-end;justify-content:center;}
+.moverlay.show{display:flex;}
+.modal{background:#fff;border-radius:16px 16px 0 0;padding:24px 20px 32px;width:100%;max-width:500px;animation:slideUp .25s ease;max-height:92vh;overflow-y:auto;}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+.mtitle{font-size:17px;font-weight:600;margin-bottom:16px;}
+.fg{margin-bottom:14px;}
+.flb{font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;display:block;}
+.finput,.fsel{width:100%;border:1px solid #ddd;border-radius:6px;padding:10px 12px;font-size:14px;outline:none;font-family:'Roboto',sans-serif;transition:border-color .2s;}
+.finput:focus,.fsel:focus{border-color:#1a73e8;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.mact{display:flex;gap:10px;margin-top:20px;justify-content:flex-end;}
+.bcnl{border:1px solid #ddd;border-radius:6px;padding:9px 18px;font-size:13px;cursor:pointer;background:#fff;color:#555;}
+.bsav{background:#1a73e8;color:#fff;border:none;border-radius:6px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;}
+.bsav:disabled{background:#aaa;}
+.sind{display:none;align-items:center;gap:6px;font-size:12px;color:#1a73e8;margin-right:auto;}
+.sind.show{display:flex;}
+.aitem{background:#fff;border-bottom:1px solid #f0f0f0;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.aun{font-weight:600;font-size:14px;}.aur{font-size:11px;color:#888;margin-top:1px;}
+.ppills{display:flex;gap:6px;flex-wrap:wrap;}
+.pill{padding:3px 9px;border-radius:12px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:all .15s;}
+.pill-on{background:#e8f0fe;color:#1a73e8;border-color:#c5d8fb;}
+.pill-off{background:#f5f5f5;color:#aaa;border-color:#e0e0e0;}
+.badge-a{background:#ede7f6;color:#673ab7;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;}
+.badge-e{background:#e3f2fd;color:#1565c0;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;}
+.badge-v{background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;}
+.noperm{background:#fff3e0;border-left:3px solid #ff9800;padding:12px 16px;margin:12px;border-radius:4px;font-size:13px;color:#e65100;}
+.scard{background:#fff;margin:8px 0;}
+.shead{padding:12px 16px;border-bottom:1px solid #f0f0f0;font-size:13px;font-weight:600;color:#444;background:#fafafa;}
+.rlbtn{color:#1a73e8;font-size:13px;font-weight:600;cursor:pointer;border:none;background:transparent;padding:4px 8px;}
+.mgsec{background:#fff;margin-bottom:8px;}
+.mgsech{padding:14px 16px;background:#e8f0fe;border-bottom:2px solid #1a73e8;display:flex;align-items:center;justify-content:space-between;}
+.mgsechi{font-size:14px;font-weight:700;color:#1a73e8;display:flex;align-items:center;gap:8px;}
+.mgaddb{background:#1a73e8;color:#fff;border:none;border-radius:20px;padding:6px 16px;font-size:12px;font-weight:600;cursor:pointer;}
+.mgitem{padding:12px 16px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:10px;}
+.mgitem:last-child{border-bottom:none;}
+.mgin{flex:1;font-size:14px;font-weight:500;color:#212121;}
+.mgcnt{font-size:11px;color:#888;background:#f5f5f5;padding:2px 8px;border-radius:10px;}
+.mgact{display:flex;gap:6px;}
+.meb{background:#e8f0fe;color:#1a73e8;border:1px solid #c5d8fb;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;}
+.mdb{background:#fce8e6;color:#ea4335;border:1px solid #f5c6cb;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;}
+.mgempty{padding:24px 16px;text-align:center;color:#aaa;font-size:13px;}
+.mgiform{padding:12px 16px;background:#f8f9fa;border-bottom:1px solid #e0e0e0;display:none;gap:8px;align-items:center;}
+.mgiform.show{display:flex;}
+.mginput{flex:1;border:1px solid #ddd;border-radius:6px;padding:9px 12px;font-size:14px;outline:none;}
+.mginput:focus{border-color:#1a73e8;}
+.mgisav{background:#1a73e8;color:#fff;border:none;border-radius:6px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;}
+.mgicnl{background:#fff;color:#666;border:1px solid #ddd;border-radius:6px;padding:9px 12px;font-size:13px;cursor:pointer;}
+.noperm2{background:#fff3e0;border-left:3px solid #ff9800;padding:12px 16px;margin:12px;border-radius:4px;font-size:13px;color:#e65100;}
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(10px);background:#323232;color:#fff;border-radius:8px;padding:11px 20px;font-size:13px;z-index:999;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+#toast.ok{background:#1e7e34;}
+#toast.err{background:#c62828;}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loadingScreen">
+  <div style="font-size:40px;margin-bottom:8px;">♻</div>
+  <div class="spinner"></div>
+  <div class="load-txt" id="loadTxt">Connecting to Firebase...</div>
+</div>
+
+<!-- LOGIN -->
+<div id="loginScreen" style="display:none;">
+  <div class="lbox">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:32px;margin-bottom:6px;">♻</div>
+      <div class="llogo">Rate Update</div>
+      <div class="lco">SURYAANS PAPER</div>
+    </div>
+    <div class="lbadge"><span class="ldot"></span>Live Firebase System</div>
+    <div class="ltitle">Staff Login</div>
+    <label class="llbl">Username</label>
+    <input class="linput" id="lUser" placeholder="Enter username" onkeydown="if(event.key==='Enter')doLogin()">
+    <label class="llbl">Password</label>
+    <input class="linput" type="password" id="lPass" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="lbtn" onclick="doLogin()" id="loginBtn">Sign In</button>
+    <div class="lerr" id="lErr"></div>
+    <div class="lfooter">Authorised access only · SURYAANS PAPER</div>
+    <div class="lfooter" style="margin-top:6px;color:#ccc;">Developed by <b style="color:#aaa;">Sushil</b></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none;">
+  <!-- POPUP NOTIFICATION -->
+  <div class="npopup" id="npopup">
+    <div class="npbar"></div>
+    <div class="npinner">
+      <div class="npicon" id="npIcon">📊</div>
+      <div class="npbody">
+        <div class="npapp">Rate Update · SURYAANS PAPER</div>
+        <div class="nptitle" id="npTitle"></div>
+        <div class="npmsg" id="npMsg"></div>
+        <div class="nptime" id="npTime"></div>
+      </div>
+      <button class="npcls" onclick="closePopup()">✕</button>
+    </div>
+  </div>
+
+  <!-- APPBAR -->
+  <div class="appbar">
+    <div>
+      <div class="appbar-title" id="appTitle">Rate Masters</div>
+      <div style="font-size:10px;opacity:.7;margin-top:-2px;">SURYAANS PAPER</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <div class="nbell ibtn" onclick="toggleNotifs()">🔔<span class="nbadge" id="nbadge"></span></div>
+      <div class="uchip"><span class="rdot" id="rdot"></span><span id="uname"></span></div>
+      <button class="ibtn" onclick="doLogout()" title="Logout">⏻</button>
+    </div>
+  </div>
+
+  <!-- SYNC BAR -->
+  <div class="sbar on" id="syncbar">
+    <span class="sdot g"></span><span id="synctxt">Firebase connected — live sync</span>
+  </div>
+
+  <!-- NOTIFICATION PANEL -->
+  <div class="npanel" id="npanel">
+    <div class="nphead">
+      <span style="font-size:14px;font-weight:600;">🔔 Notifications</span>
+      <button onclick="clearNotifs()" style="font-size:11px;cursor:pointer;border:none;background:transparent;color:#fff;">Clear all</button>
+    </div>
+    <div class="nplist" id="nplist"></div>
+  </div>
+
+  <div class="main">
+    <!-- RATES PAGE -->
+    <div class="page active" id="page-list">
+      <div class="sbar2">
+        <input class="sinput" id="rSearch" placeholder="🔍 Search party, item..." oninput="searchRates(this.value)">
+        <button class="ibtn" style="color:#1a73e8;font-size:22px;" onclick="sortRates()">⇅</button>
+      </div>
+      <div class="lview">
+        <div class="lhdr" style="grid-template-columns:140px 85px 75px 65px 100px 1fr 24px;">
+          <span>Party</span><span>New Rate</span><span>Old Rate</span><span>Diff</span><span>Date</span><span>Item</span><span></span>
+        </div>
+        <div id="rateList"></div>
+      </div>
+      <button class="fab" id="fabR" onclick="openAddRate()">+</button>
+    </div>
+
+    <!-- PARTIES PAGE -->
+    <div class="page" id="page-parties">
+      <div class="sbar2">
+        <input class="sinput" id="pSearch" placeholder="🔍 Search party..." oninput="searchParties(this.value)">
+      </div>
+      <div class="lview">
+        <div class="lhdr" style="grid-template-columns:1fr auto 24px;">
+          <span>Party Name</span><span>Changes</span><span></span>
+        </div>
+        <div id="partyList"></div>
+      </div>
+      <button class="fab" id="fabP" onclick="openAddParty()">+</button>
+    </div>
+
+    <!-- MANAGE PAGE -->
+    <div class="page" id="page-manage">
+      <div id="manageContent"></div>
+    </div>
+
+    <!-- ACCESS PAGE -->
+    <div class="page" id="page-access">
+      <div id="accessContent"></div>
+      <button class="fab" id="fabU" onclick="openAddUser()">+</button>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:6px 0 0;font-size:10px;color:#bbb;background:#f5f5f5;">Developed by <b>Sushil</b> · SURYAANS PAPER</div>
+
+  <nav class="bnav">
+    <button class="bni active" onclick="showPage('list',this)"><span class="bni-icon">📋</span>Rates</button>
+    <button class="bni" onclick="showPage('parties',this)"><span class="bni-icon">🏭</span>Parties</button>
+    <button class="bni" onclick="showPage('manage',this)"><span class="bni-icon">⚙️</span>Manage</button>
+    <button class="bni" onclick="showPage('access',this)"><span class="bni-icon">🔐</span>Access</button>
+  </nav>
+
+  <!-- RATE DETAIL -->
+  <div class="doverlay" id="rateDetail">
+    <div class="dbar">
+      <div style="display:flex;align-items:center;"><button class="bbtn" onclick="closeRateDetail()">←</button><span style="font-size:16px;font-weight:500;">Rate Detail</span></div>
+      <div style="display:flex;">
+        <button id="rdDel" onclick="deleteRate()" class="ibtn" style="color:#555;">🗑</button>
+        <button id="rdEdit" onclick="openEditRate()" class="ibtn" style="color:#1a73e8;">✏</button>
+      </div>
+    </div>
+    <div id="rateDetailBody"></div>
+  </div>
+
+  <!-- PARTY DETAIL -->
+  <div class="doverlay" id="partyDetail">
+    <div class="dbar">
+      <div style="display:flex;align-items:center;"><button class="bbtn" onclick="closePartyDetail()">←</button><span style="font-size:16px;font-weight:500;" id="partyDetailTitle">Party</span></div>
+      <div style="display:flex;">
+        <button id="pdDel" onclick="deleteParty()" class="ibtn" style="color:#555;">🗑</button>
+        <button id="pdEdit" onclick="openEditParty()" class="ibtn" style="color:#1a73e8;">✏</button>
+        <button id="pdAdd" onclick="addRateForParty()" class="ibtn" style="color:#34a853;font-size:22px;">+</button>
+      </div>
+    </div>
+    <div id="partyDetailBody"></div>
+  </div>
+</div>
+
+<!-- RATE MODAL -->
+<div class="moverlay" id="rateModal">
+  <div class="modal">
+    <div class="mtitle" id="rateModalTitle">Add Rate Entry</div>
+    <input type="hidden" id="rmId">
+    <div class="fg"><label class="flb">Party *</label><select class="fsel" id="rmParty" onchange="autoFill()"></select></div>
+    <div class="fg"><label class="flb">Item *</label><select class="fsel" id="rmItem" onchange="autoFill()"><option value="">— Select —</option></select></div>
+    <div class="frow">
+      <div class="fg">
+        <label class="flb">Old Rate (₹) <span style="color:#1a73e8;font-weight:400;text-transform:none;font-size:10px;">auto-filled</span></label>
+        <input class="finput" id="rmOld" type="number" step="0.25" readonly style="background:#f0f7ff;color:#1a73e8;font-weight:700;">
+        <div id="rmOldHint" style="font-size:11px;color:#888;margin-top:3px;min-height:14px;"></div>
+      </div>
+      <div class="fg"><label class="flb">New Rate (₹) *</label><input class="finput" id="rmNew" type="number" step="0.25" placeholder="Enter rate"></div>
+    </div>
+    <div class="fg"><label class="flb">Change Date</label><input class="finput" id="rmDate" type="date"></div>
+    <div class="fg"><label class="flb">Updated By</label><input class="finput" id="rmBy" readonly style="background:#f8f9fa;color:#666;"></div>
+    <div class="mact">
+      <span class="sind" id="savingInd"><span class="spinner" style="width:16px;height:16px;border-width:2px;"></span>Saving...</span>
+      <button class="bcnl" onclick="closeModal('rateModal')">Cancel</button>
+      <button class="bsav" onclick="saveRate()" id="btnSaveRate">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- PARTY MODAL -->
+<div class="moverlay" id="partyModal">
+  <div class="modal">
+    <div class="mtitle" id="partyModalTitle">Add Party</div>
+    <input type="hidden" id="pmId">
+    <div class="fg"><label class="flb">Party Name *</label><input class="finput" id="pmName" placeholder="Party name..."></div>
+    <div class="fg"><label class="flb">Contact</label><input class="finput" id="pmContact" type="tel" placeholder="Phone..."></div>
+    <div class="mact">
+      <button class="bcnl" onclick="closeModal('partyModal')">Cancel</button>
+      <button class="bsav" onclick="saveParty()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- USER MODAL -->
+<div class="moverlay" id="userModal">
+  <div class="modal">
+    <div class="mtitle" id="userModalTitle">Add Staff</div>
+    <input type="hidden" id="umId">
+    <div class="frow">
+      <div class="fg"><label class="flb">Full Name *</label><input class="finput" id="umName" placeholder="Name..."></div>
+      <div class="fg"><label class="flb">Username *</label><input class="finput" id="umUser" placeholder="username..."></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="flb">Password *</label><input class="finput" id="umPass" type="password" placeholder="Password..."></div>
+      <div class="fg"><label class="flb">Role</label><select class="fsel" id="umRole"><option value="viewer">Viewer</option><option value="editor">Editor</option><option value="admin">Admin</option></select></div>
+    </div>
+    <div class="fg" style="background:#f8f9fa;padding:14px;border-radius:8px;">
+      <div class="flb" style="margin-bottom:12px;">Permissions</div>
+      <label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:13px;cursor:pointer;"><input type="checkbox" id="upEdit" style="width:16px;height:16px;accent-color:#1a73e8;"> Can Edit Rates</label>
+      <label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:13px;cursor:pointer;"><input type="checkbox" id="upAdd" style="width:16px;height:16px;accent-color:#1a73e8;"> Can Add Records</label>
+      <label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:13px;cursor:pointer;"><input type="checkbox" id="upDel" style="width:16px;height:16px;accent-color:#1a73e8;"> Can Delete</label>
+      <label style="display:flex;align-items:center;gap:10px;font-size:13px;cursor:pointer;"><input type="checkbox" id="upAccess" style="width:16px;height:16px;accent-color:#1a73e8;"> Can Manage Access</label>
+    </div>
+    <div class="mact">
+      <button class="bcnl" onclick="closeModal('userModal')">Cancel</button>
+      <button class="bsav" onclick="saveUser()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+//  FIREBASE INIT
+// ═══════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyC1YxbSw0oI0OFxxfa8xGEAsIfeIb9YCIg",
+  authDomain: "suryaanspaper-rate-update.firebaseapp.com",
+  databaseURL: "https://suryaanspaper-rate-update-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "suryaanspaper-rate-update",
+  storageBucket: "suryaanspaper-rate-update.firebasestorage.app",
+  messagingSenderId: "471424845975",
+  appId: "1:471424845975:web:864a5c761ecb86a23d81d2"
+};
+firebase.initializeApp(firebaseConfig);
+const DB_REF = firebase.database();
+const dbRef = (path) => DB_REF.ref(path);
+
+// Firebase helpers
+const fbSet  = (path, val)  => dbRef(path).set(val);
+const fbGet  = (path)       => dbRef(path).get().then(s => s.exists() ? s.val() : null);
+const fbOn   = (path, cb)   => { dbRef(path).on('value', s => cb(s.val())); };
+const fbOff  = (path)       => dbRef(path).off();
+
+// ═══════════════════════════════════════
+//  DEFAULT DATA
+// ═══════════════════════════════════════
+const DEF_USERS = [
+  {id:'u1',name:'Admin (Owner)',username:'admin',pass:'admin123',role:'admin',perms:{edit:true,add:true,del:true,access:true}},
+  {id:'u2',name:'Surajit Biswas',username:'surajit',pass:'surajit123',role:'editor',perms:{edit:true,add:true,del:false,access:false}},
+  {id:'u3',name:'Amit',username:'amit',pass:'amit123',role:'editor',perms:{edit:true,add:true,del:false,access:false}},
+  {id:'u4',name:'Suraj',username:'suraj',pass:'suraj123',role:'viewer',perms:{edit:false,add:false,del:false,access:false}},
+];
+const DEF_PARTIES = [
+  {id:'par1',name:'Aarkay Packaging Industries',contact:''},
+  {id:'par2',name:'ACE Agencies',contact:''},
+  {id:'par3',name:'APA Package',contact:''},
+  {id:'par4',name:'Arudra Traders',contact:''},
+  {id:'par5',name:'Aruna Industrial Corporation',contact:''},
+  {id:'par6',name:'Ashok Rai Boards',contact:''},
+  {id:'par7',name:'AVM Traders',contact:''},
+  {id:'par8',name:'Balasundaram Waste Paper Mart',contact:''},
+  {id:'par9',name:'Boxit Packaging LLP',contact:''},
+  {id:'par10',name:'Canpac Trends Private Limited',contact:''},
+  {id:'par11',name:'Canpac Trends Pvt Ltd',contact:''},
+  {id:'par12',name:'Dioxn Technologies (India) LTD',contact:''},
+  {id:'par13',name:'Dixon Technologies (India) LTD',contact:''},
+  {id:'par14',name:'Erai Arul Traders',contact:''},
+  {id:'par15',name:'Fine Papers',contact:''},
+  {id:'par16',name:'Girnar Packaging',contact:''},
+  {id:'par17',name:'Harshal Packaging',contact:''},
+  {id:'par18',name:'Horizon Packs Private Limited',contact:''},
+  {id:'par19',name:'IBT Solutions',contact:''},
+  {id:'par20',name:'Indo Paper Craft Private Limited',contact:''},
+  {id:'par21',name:'J T Pack Pvt Ltd',contact:''},
+  {id:'par22',name:'J.B Traders',contact:''},
+  {id:'par23',name:'Kanakadhara Traders',contact:''},
+  {id:'par24',name:'Madha Papers',contact:''},
+  {id:'par25',name:'Madha Waste Paper Company',contact:''},
+  {id:'par26',name:'Mohammed Enterprises',contact:''},
+  {id:'par27',name:'National Traders',contact:''},
+  {id:'par28',name:'Naveen Traders',contact:''},
+  {id:'par29',name:'Noorani Papers',contact:''},
+  {id:'par30',name:'Noorani Traders',contact:''},
+  {id:'par31',name:'Oji India Packaging PVT.LTD.',contact:''},
+  {id:'par32',name:'Panoply Packagings Pvt.Ltd.',contact:''},
+  {id:'par33',name:'S S Traders',contact:''},
+  {id:'par34',name:'S.S TRADERS (Royapuram)',contact:''},
+  {id:'par35',name:'SAM Traders',contact:''},
+  {id:'par36',name:'Shree Priya Packs',contact:''},
+  {id:'par37',name:'Shree Umiya Tradelink',contact:''},
+  {id:'par38',name:'Shweta Print Pack Pvt Ltd',contact:''},
+  {id:'par39',name:'Siva Traders',contact:''},
+  {id:'par40',name:'Siva Waste Paper Company',contact:''},
+  {id:'par41',name:'Siva Waste Paper Mart',contact:''},
+  {id:'par42',name:'Sri Balaji Timber & Hardwares',contact:''},
+  {id:'par43',name:'Sri Ganesa Traders',contact:''},
+  {id:'par44',name:'Sri Krishna Traders',contact:''},
+  {id:'par45',name:'Sri Lakshmi & Co.',contact:''},
+  {id:'par46',name:'Sri Lakshmi Traders',contact:''},
+  {id:'par47',name:'Sri Muthukumaran Traders',contact:''},
+  {id:'par48',name:'Sri Nivasa Traders',contact:''},
+  {id:'par49',name:'Sri Padmavathi Balaji Traders',contact:''},
+  {id:'par50',name:'Sri Selva Vinayagar Traders',contact:''},
+  {id:'par51',name:'Srinivasa Traders',contact:''},
+  {id:'par52',name:'Tharun Traders',contact:''},
+  {id:'par53',name:'Thirupathy Balaji Traders',contact:''},
+  {id:'par54',name:'Tirumala Papers',contact:''},
+  {id:'par55',name:'Vamshadhara Paper Mills Ltd.',contact:''},
+  {id:'par56',name:'Velvin Rengo Containers Pvt.Ltd',contact:''},
+  {id:'par57',name:'Venkateswara Traders',contact:''},
+  {id:'par58',name:'Vital Paper Products Pvt.Ltd.',contact:''},
+];
+const DEF_MATS = ['Local Waste Paper Box','Waste Paper Cutting','Newspaper','White Paper','OCC / Cardboard','Kraft Paper','Mixed Waste Paper','Books / Registers'];
+const DEF_RATES = [];
+
+// ═══════════════════════════════════════
+//  LIVE STATE
+// ═══════════════════════════════════════
+let MEM = {users:[],parties:[],rates:[],notifs:[],mats:[]};
+let CU=null, curRId=null, curPId=null, rQ='', pQ='', notifOpen=false;
+
+// ═══════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════
+window.onload = async function() {
+  try {
+    document.getElementById('loadTxt').textContent = 'Loading data...';
+    const [u,p,r,n,m] = await Promise.all([
+      fbGet('users'), fbGet('parties'), fbGet('rates'),
+      fbGet('notifs'), fbGet('mats')
+    ]);
+    MEM.users  = u ? Object.values(u) : [];
+    MEM.parties= p ? Object.values(p) : [];
+    MEM.rates  = r ? Object.values(r) : [];
+    MEM.notifs = n ? (Array.isArray(n) ? n : Object.values(n)) : [];
+    MEM.mats   = m ? (Array.isArray(m) ? m : Object.values(m)) : [];
+
+    // First time seed
+    if(!MEM.users.length)  { MEM.users=JSON.parse(JSON.stringify(DEF_USERS));   const o={};MEM.users.forEach(x=>o[x.id]=x);   await fbSet('users',o); }
+    if(!MEM.parties.length){ MEM.parties=JSON.parse(JSON.stringify(DEF_PARTIES));const o={};MEM.parties.forEach(x=>o[x.id]=x); await fbSet('parties',o); }
+    // Rates NOT auto-seeded — deleted data stays deleted
+    if(!MEM.mats.length)   { MEM.mats=[...DEF_MATS]; await fbSet('mats',MEM.mats); }
+
+    // Realtime listeners
+    fbOn('rates',  d=>{ if(!d||!CU) return; MEM.rates=Object.values(d);   renderRates(rQ); if(curPId)renderPartyBody(); setOnline(); });
+    fbOn('parties',d=>{ if(!d||!CU) return; MEM.parties=Object.values(d); renderParties(pQ); fillPartyDrop(); });
+    fbOn('mats',   d=>{ if(!d||!CU) return; MEM.mats=Array.isArray(d)?d:Object.values(d); fillItemDrop(); });
+    fbOn('users',  d=>{ if(!d||!CU) return; MEM.users=Object.values(d); if(!MEM.users.find(u=>u.id===CU.id)){doLogout();return;} CU=MEM.users.find(u=>u.id===CU.id)||CU; renderAccess(); });
+    fbOn('notifs', d=>{
+      if(!d||!CU) return;
+      const nn=Array.isArray(d)?d:Object.values(d);
+      nn.sort((a,b)=>(b.ts||0)-(a.ts||0));
+      const prev=MEM.notifs.length; MEM.notifs=nn;
+      updateBadge(); renderNotifPanel();
+      if(nn.length>prev){ const x=nn[0]; if(x&&!x.read) showPopup(x.title,x.msg,x.icon||'📊'); }
+    });
+
+    // Check saved session
+    let sid=null; try{sid=localStorage.getItem('skt-session');}catch(e){}
+    if(sid){
+      const su=MEM.users.find(u=>u.id===sid);
+      if(su){ hide('loadingScreen'); return loginAs(su); }
+    }
+    hide('loadingScreen');
+    show('loginScreen','flex');
+  } catch(e) {
+    document.getElementById('loadTxt').textContent = 'Error: '+e.message;
+    console.error(e);
+  }
+};
+
+function hide(id){ document.getElementById(id).style.display='none'; }
+function show(id,d='block'){ document.getElementById(id).style.display=d; }
+function setOnline(){ const s=document.getElementById('syncbar'); s.className='sbar on'; s.innerHTML='<span class="sdot g"></span><span>Firebase connected</span>'; }
+function setOffline(){ const s=document.getElementById('syncbar'); s.className='sbar off'; s.innerHTML='<span class="sdot o"></span><span>Offline</span>'; }
+
+// ═══════════════════════════════════════
+//  LOGIN / LOGOUT
+// ═══════════════════════════════════════
+async function doLogin(){
+  const un=document.getElementById('lUser').value.trim();
+  const pw=document.getElementById('lPass').value.trim();
+  const err=document.getElementById('lErr');
+  err.textContent='';
+  if(!un||!pw){err.textContent='Enter username and password.';return;}
+  const btn=document.getElementById('loginBtn');
+  btn.textContent='Signing in...'; btn.disabled=true;
+  try{
+    const d=await fbGet('users');
+    if(d) MEM.users=Object.values(d);
+  }catch(e){}
+  btn.textContent='Sign In'; btn.disabled=false;
+  const u=MEM.users.find(u=>u.username===un&&u.pass===pw);
+  if(!u){err.textContent='Wrong username or password.';return;}
+  loginAs(u);
+}
+
+function loginAs(u){
+  CU=u;
+  try{localStorage.setItem('skt-session',u.id);}catch(e){}
+  hide('loginScreen'); hide('loadingScreen');
+  show('app','block');
+  document.getElementById('uname').textContent=CU.name;
+  document.getElementById('rdot').style.background=CU.role==='admin'?'#8e24aa':CU.role==='editor'?'#1e88e5':'#43a047';
+  document.getElementById('fabR').style.display=CU.perms.add?'flex':'none';
+  document.getElementById('fabP').style.display=CU.perms.add?'flex':'none';
+  document.getElementById('fabU').style.display=CU.perms.access?'flex':'none';
+  fillPartyDrop(); fillItemDrop();
+  renderRates(); renderParties(); renderAccess(); renderNotifPanel(); updateBadge();
+}
+
+function doLogout(){
+  CU=null;
+  try{localStorage.removeItem('skt-session');}catch(e){}
+  hide('app'); show('loginScreen','flex');
+  document.getElementById('lPass').value='';
+  document.getElementById('lUser').value='';
+  document.getElementById('lErr').textContent='';
+  if(notifOpen) toggleNotifs();
+}
+
+// ═══════════════════════════════════════
+//  SAVE HELPERS
+// ═══════════════════════════════════════
+async function saveRates()   { const o={};MEM.rates.forEach(r=>o[r.id]=r);   await fbSet('rates',o); }
+async function saveParties() { const o={};MEM.parties.forEach(p=>o[p.id]=p); await fbSet('parties',o); }
+async function saveUsers()   { const o={};MEM.users.forEach(u=>o[u.id]=u);   await fbSet('users',o); }
+async function saveMats()    { await fbSet('mats',MEM.mats); }
+async function saveNotifs()  { await fbSet('notifs',MEM.notifs); }
+
+// ═══════════════════════════════════════
+//  NOTIFICATIONS
+// ═══════════════════════════════════════
+async function addNotif(title,msg,icon='📊'){
+  const n={id:'n'+Date.now(),ts:Date.now(),title,msg,icon,time:new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true}),read:false};
+  MEM.notifs.unshift(n);
+  if(MEM.notifs.length>50) MEM.notifs=MEM.notifs.slice(0,50);
+  await saveNotifs(); updateBadge(); renderNotifPanel(); showPopup(title,msg,icon);
+}
+function updateBadge(){
+  const c=MEM.notifs.filter(n=>!n.read).length;
+  const b=document.getElementById('nbadge');
+  if(c>0){b.textContent=c>9?'9+':c;b.classList.add('show');}else b.classList.remove('show');
+}
+function toggleNotifs(){
+  notifOpen=!notifOpen;
+  const p=document.getElementById('npanel');
+  if(notifOpen){p.classList.add('show');MEM.notifs.forEach(n=>n.read=true);saveNotifs();updateBadge();renderNotifPanel();}
+  else p.classList.remove('show');
+}
+async function clearNotifs(){ MEM.notifs=[];await saveNotifs();updateBadge();renderNotifPanel(); }
+function renderNotifPanel(){
+  const el=document.getElementById('nplist');
+  if(!MEM.notifs.length){el.innerHTML='<div class="nempty">No notifications yet.</div>';return;}
+  el.innerHTML=MEM.notifs.map(n=>`<div class="nitem ${n.read?'':'unread'}"><div class="ni-icon">${n.icon}</div><div><div class="ni-title">${n.title}</div><div class="ni-msg">${n.msg}</div><div class="ni-time">${n.time}</div></div></div>`).join('');
+}
+document.addEventListener('click',e=>{if(notifOpen&&!document.getElementById('npanel').contains(e.target)&&!e.target.closest('.nbell')){notifOpen=false;document.getElementById('npanel').classList.remove('show');}});
+let ptimer=null;
+function showPopup(title,msg,icon='📊'){
+  document.getElementById('npIcon').textContent=icon;
+  document.getElementById('npTitle').textContent=title;
+  document.getElementById('npMsg').textContent=msg;
+  document.getElementById('npTime').textContent=new Date().toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit',hour12:true});
+  document.getElementById('npopup').classList.add('in');
+  clearTimeout(ptimer); ptimer=setTimeout(closePopup,5000);
+}
+function closePopup(){ document.getElementById('npopup').classList.remove('in'); clearTimeout(ptimer); }
+
+// ═══════════════════════════════════════
+//  RATE LIST
+// ═══════════════════════════════════════
+function renderRates(q=''){
+  let d=[...MEM.rates];
+  if(q) d=d.filter(r=>{const p=MEM.parties.find(x=>x.id===r.partyId);return(p&&p.name.toLowerCase().includes(q.toLowerCase()))||r.item.toLowerCase().includes(q.toLowerCase());});
+  const el=document.getElementById('rateList');
+  if(!d.length){el.innerHTML='<div style="padding:40px;text-align:center;color:#999;">No records</div>';return;}
+  el.innerHTML=d.map(r=>{
+    const p=MEM.parties.find(x=>x.id===r.partyId);
+    const ds=r.diff>0?'+'+r.diff.toFixed(2):r.diff.toFixed(2);
+    const dc=r.diff>0?'dpos':r.diff<0?'dneg':'';
+    return `<div class="lrow" style="grid-template-columns:140px 85px 75px 65px 100px 1fr 24px;" onclick="openRateDetail('${r.id}')">
+      <span class="pname" style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p?p.name:'—'}</span>
+      <span class="rnew"><span class="dot dot-r"></span>${r.newRate.toFixed(2)}</span>
+      <span class="rold">${r.oldRate.toFixed(2)}</span>
+      <span class="${dc}">${ds}</span>
+      <span class="cdate"><span class="dot dot-y"></span>${r.changeDate}</span>
+      <span style="font-size:12px;color:#444;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.item}</span>
+      <span class="rarr">›</span>
+    </div>`;
+  }).join('');
+}
+function searchRates(q){rQ=q;renderRates(q);}
+function sortRates(){MEM.rates.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));renderRates(rQ);toast('Sorted by latest');}
+
+// ═══════════════════════════════════════
+//  RATE DETAIL
+// ═══════════════════════════════════════
+function openRateDetail(id){
+  curRId=id;
+  document.getElementById('rdEdit').style.display=CU.perms.edit?'':'none';
+  document.getElementById('rdDel').style.display=CU.perms.del?'':'none';
+  renderRateBody(); show('rateDetail');
+}
+function renderRateBody(){
+  const r=MEM.rates.find(x=>x.id===curRId); if(!r) return;
+  const p=MEM.parties.find(x=>x.id===r.partyId);
+  const ds=r.diff>0?'+'+r.diff.toFixed(2):r.diff.toFixed(2);
+  const dc=r.diff>0?'dpos':r.diff<0?'dneg':'';
+  document.getElementById('rateDetailBody').innerHTML=`
+    <div class="dhdr"><div class="dname fvp">${p?p.name:'—'}</div></div>
+    <div class="fcard"><div class="flbl">ID</div><div class="fvid">${r.id}</div></div>
+    <div class="fcard"><div class="flbl">Item</div><div>${r.item}</div></div>
+    <div class="fcard"><div class="flbl">Old Rate</div><div class="fnav"><div class="fvo" style="flex:1;">Rs.${r.oldRate.toFixed(2)}</div><button class="fnavb" onclick="prevRate()">&#8249;</button><button class="fnavb" onclick="nextRate()">&#8250;</button></div></div>
+    <div class="fcard"><div class="flbl">New Rate</div><div class="fvn"><span class="dot dot-r"></span>Rs.${r.newRate.toFixed(2)}</div></div>
+    <div class="fcard"><div class="flbl">Difference</div><div class="${dc}" style="font-weight:600;font-size:16px;">${ds}</div></div>
+    <div class="fcard"><div class="flbl">Change Date</div><div class="cdate"><span class="dot dot-y"></span>${r.changeDate}</div></div>
+    <div class="fcard"><div class="flbl">Updated By</div><div>${r.updatedBy}</div></div>
+    <div class="fcard"><div class="flbl">Timestamp</div><div class="tsc">${r.timestamp}</div></div>`;
+}
+function closeRateDetail(){ hide('rateDetail'); curRId=null; }
+function prevRate(){ const i=MEM.rates.findIndex(r=>r.id===curRId); if(i>0){curRId=MEM.rates[i-1].id;renderRateBody();} }
+function nextRate(){ const i=MEM.rates.findIndex(r=>r.id===curRId); if(i<MEM.rates.length-1){curRId=MEM.rates[i+1].id;renderRateBody();} }
+async function deleteRate(){
+  if(!CU.perms.del){toast('No delete permission!','err');return;}
+  if(!confirm('Delete this entry?')) return;
+  MEM.rates=MEM.rates.filter(r=>r.id!==curRId);
+  await saveRates(); closeRateDetail(); renderRates(rQ); toast('Deleted','ok');
+}
+
+// ═══════════════════════════════════════
+//  AUTO FILL OLD RATE
+// ═══════════════════════════════════════
+function autoFill(){
+  const pid=document.getElementById('rmParty').value;
+  const item=document.getElementById('rmItem').value;
+  const eid=document.getElementById('rmId').value;
+  const oldEl=document.getElementById('rmOld');
+  const hint=document.getElementById('rmOldHint');
+  if(!pid||!item){oldEl.value='';hint.textContent='';return;}
+  const prev=MEM.rates.filter(r=>r.partyId===pid&&r.item===item&&r.id!==eid).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+  if(prev.length){oldEl.value=prev[0].newRate.toFixed(2);hint.innerHTML=`Last: <b style="color:#ea4335;">Rs.${prev[0].newRate.toFixed(2)}</b> on ${prev[0].changeDate}`;}
+  else{oldEl.value='';hint.textContent='First entry for this party & item';}
+}
+
+// ═══════════════════════════════════════
+//  RATE ADD/EDIT
+// ═══════════════════════════════════════
+function openAddRate(){
+  if(!CU.perms.add){toast('No add permission!','err');return;}
+  document.getElementById('rateModalTitle').textContent='Add Rate Entry';
+  document.getElementById('rmId').value='';
+  document.getElementById('rmParty').value='';
+  document.getElementById('rmItem').value='';
+  document.getElementById('rmOld').value='';
+  document.getElementById('rmNew').value='';
+  document.getElementById('rmOldHint').textContent='Select party & item';
+  document.getElementById('rmDate').value=new Date().toISOString().split('T')[0];
+  document.getElementById('rmBy').value=CU.name;
+  document.getElementById('rateModal').classList.add('show');
+}
+function openEditRate(){
+  if(!CU.perms.edit){toast('No edit permission!','err');return;}
+  const r=MEM.rates.find(x=>x.id===curRId);
+  document.getElementById('rateModalTitle').textContent='Edit Rate Entry';
+  document.getElementById('rmId').value=r.id;
+  document.getElementById('rmParty').value=r.partyId;
+  document.getElementById('rmItem').value=r.item;
+  document.getElementById('rmOld').value=r.oldRate;
+  document.getElementById('rmNew').value=r.newRate;
+  document.getElementById('rmOldHint').textContent='';
+  document.getElementById('rmDate').value='';
+  document.getElementById('rmBy').value=CU.name;
+  document.getElementById('rateModal').classList.add('show');
+}
+async function saveRate(){
+  const pid=document.getElementById('rmParty').value;
+  const item=document.getElementById('rmItem').value;
+  const old=parseFloat(document.getElementById('rmOld').value)||0;
+  const nw=parseFloat(document.getElementById('rmNew').value);
+  if(!pid||!item||isNaN(nw)){toast('Party, Item and New Rate required!','err');return;}
+  const diff=parseFloat((nw-old).toFixed(2));
+  const dv=document.getElementById('rmDate').value;
+  const cd=dv?new Date(dv).toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'}):new Date().toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'});
+  const ts=new Date().toLocaleString('en-US',{month:'numeric',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true});
+  const eid=document.getElementById('rmId').value;
+  const pname=MEM.parties.find(p=>p.id===pid)?.name||pid;
+  document.getElementById('savingInd').classList.add('show');
+  document.getElementById('btnSaveRate').disabled=true;
+  try{
+    if(eid){
+      Object.assign(MEM.rates.find(r=>r.id===eid),{partyId:pid,item,oldRate:old,newRate:nw,diff,changeDate:cd,updatedBy:CU.name,timestamp:ts});
+      await saveRates();
+      await addNotif('Rate Updated',`${pname} - ${item}: Rs.${old} -> Rs.${nw.toFixed(2)} (${diff>=0?'+':''}${diff}) by ${CU.name}`,'✏️');
+      if(curRId) renderRateBody();
+      if(curPId===pid) renderPartyBody();
+      toast('Updated!','ok');
+    } else {
+      const nid='r'+Date.now();
+      MEM.rates.unshift({id:nid,partyId:pid,item,oldRate:old,newRate:nw,diff,changeDate:cd,updatedBy:CU.name,timestamp:ts});
+      await saveRates();
+      await addNotif('New Rate Entry',`${pname} - ${item}: Rs.${old} -> Rs.${nw.toFixed(2)} (${diff>=0?'+':''}${diff}) by ${CU.name}`,diff>0?'📈':diff<0?'📉':'➡️');
+      if(curPId===pid) renderPartyBody();
+      toast('Rate saved!','ok');
+    }
+  }catch(e){ toast('Save failed!','err'); }
+  document.getElementById('savingInd').classList.remove('show');
+  document.getElementById('btnSaveRate').disabled=false;
+  closeModal('rateModal'); renderRates(rQ);
+}
+
+// ═══════════════════════════════════════
+//  PARTY LIST
+// ═══════════════════════════════════════
+function renderParties(q=''){
+  let d=[...MEM.parties];
+  if(q) d=d.filter(p=>p.name.toLowerCase().includes(q.toLowerCase()));
+  const el=document.getElementById('partyList');
+  el.innerHTML=d.map(p=>{
+    const rc=MEM.rates.filter(r=>r.partyId===p.id).length;
+    const lat=MEM.rates.filter(r=>r.partyId===p.id).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp))[0];
+    const li=lat?`<span style="font-size:11px;color:#ea4335;font-weight:700;margin-left:8px;">Rs.${lat.newRate.toFixed(2)}</span><span style="font-size:10px;color:#999;margin-left:4px;">${lat.changeDate}</span>`:'';
+    return `<div class="lrow" style="grid-template-columns:1fr auto 24px;" onclick="openPartyDetail('${p.id}')"><div><div class="pname">${p.name}${li}</div></div><span style="font-size:12px;color:#888;margin-right:8px;">${rc}</span><span class="rarr">&#8250;</span></div>`;
+  }).join('');
+}
+function searchParties(q){pQ=q;renderParties(q);}
+
+// ═══════════════════════════════════════
+//  PARTY DETAIL
+// ═══════════════════════════════════════
+function openPartyDetail(id){
+  curPId=id;
+  const p=MEM.parties.find(x=>x.id===id);
+  document.getElementById('partyDetailTitle').textContent=p?p.name:'Party';
+  document.getElementById('pdEdit').style.display=CU.perms.edit?'':'none';
+  document.getElementById('pdDel').style.display=CU.perms.del?'':'none';
+  document.getElementById('pdAdd').style.display=CU.perms.add?'':'none';
+  renderPartyBody(); show('partyDetail');
+}
+function renderPartyBody(){
+  const p=MEM.parties.find(x=>x.id===curPId); if(!p) return;
+  const rels=MEM.rates.filter(r=>r.partyId===p.id).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+  const imap={}; rels.forEach(r=>{if(!imap[r.item])imap[r.item]=r;});
+  const grps={}; rels.forEach(r=>{if(!grps[r.changeDate])grps[r.changeDate]=[];grps[r.changeDate].push(r);});
+  const dates=Object.keys(grps).sort((a,b)=>new Date(b)-new Date(a));
+  const curHTML=Object.values(imap).length?`<div class="crc"><div class="crh">Current Rates</div><div class="crg">${Object.values(imap).map(r=>`<div class="cri"><div class="crin">${r.item}</div><div class="crir"><span class="dot dot-r"></span>Rs.${r.newRate.toFixed(2)}</div><div class="crid">${r.changeDate}</div></div>`).join('')}</div></div>`:'';
+  const tlHTML=dates.length?`<div class="phsec"><div class="phhdr"><span class="phtitle">Rate History <span class="hcnt">${rels.length}</span></span>${CU.perms.add?`<button class="rlbtn" onclick="addRateForParty()">+ Add</button>`:''}</div>${dates.map((dt,i)=>{const es=grps[dt];return`<div class="dg"><div class="dgh" onclick="toggleDG(this)"><span>📅</span><span class="dgd">${dt}</span><span class="dgs">${es.length} item${es.length!==1?'s':''}</span><span class="dgt ${i===0?'open':''}">›</span></div><div style="${i===0?'':'display:none'}">${es.map(r=>{const ds=r.diff>0?'+'+r.diff.toFixed(2):r.diff.toFixed(2);const up=r.diff>0,dn=r.diff<0;return`<div class="tlrow"><span class="tldot ${up?'tldot-g':'tldot-r'}"></span><div class="tlcon"><div class="tln">${r.item}</div><div class="tlrt"><span class="tlo">Rs.${r.oldRate.toFixed(2)}</span><span class="tla">→</span><span class="tlnw"><span class="dot dot-r"></span>Rs.${r.newRate.toFixed(2)}</span><span class="tld ${up?'tld-u':dn?'tld-d':'tld-s'}">${up?'▲':dn?'▼':'—'} ${ds}</span></div><div class="tlm"><span>By: <span class="tlb">${r.updatedBy}</span></span><span class="tlts">${r.timestamp}</span></div><div class="tlact">${CU.perms.edit?`<button class="tlbtn" onclick="editFromTL('${r.id}',event)">Edit</button>`:''} ${CU.perms.del?`<button class="tlbtn del" onclick="delFromTL('${r.id}',event)">Delete</button>`:''}</div></div></div>`;}).join('')}</div></div>`;}).join('')}</div>`:`<div style="padding:40px;text-align:center;color:#999;background:#fff;margin-top:8px;">No history.${CU.perms.add?`<br><button class="rlbtn" style="margin-top:12px;font-size:14px;" onclick="addRateForParty()">+ Add Entry</button>`:''}</div>`;
+  document.getElementById('partyDetailBody').innerHTML=`<div class="dhdr"><div class="dname">${p.name}</div>${p.contact?`<div style="font-size:12px;color:#888;margin-top:4px;">${p.contact}</div>`:''}</div>${curHTML}${tlHTML}`;
+}
+function toggleDG(h){const d=h.nextElementSibling;const t=h.querySelector('.dgt');const open=d.style.display!=='none';d.style.display=open?'none':'block';t.classList.toggle('open',!open);}
+function editFromTL(rid,e){e.stopPropagation();const r=MEM.rates.find(x=>x.id===rid);document.getElementById('rateModalTitle').textContent='Edit Rate';document.getElementById('rmId').value=r.id;document.getElementById('rmParty').value=r.partyId;document.getElementById('rmItem').value=r.item;document.getElementById('rmOld').value=r.oldRate;document.getElementById('rmNew').value=r.newRate;document.getElementById('rmOldHint').textContent='';document.getElementById('rmDate').value='';document.getElementById('rmBy').value=CU.name;document.getElementById('rateModal').classList.add('show');}
+async function delFromTL(rid,e){e.stopPropagation();if(!CU.perms.del){toast('No delete permission!','err');return;}if(!confirm('Delete?'))return;MEM.rates=MEM.rates.filter(r=>r.id!==rid);await saveRates();renderPartyBody();renderRates(rQ);toast('Deleted','ok');}
+function closePartyDetail(){hide('partyDetail');curPId=null;}
+function addRateForParty(){document.getElementById('rateModalTitle').textContent='Add Rate';document.getElementById('rmId').value='';document.getElementById('rmParty').value=curPId;document.getElementById('rmItem').value='';document.getElementById('rmOld').value='';document.getElementById('rmNew').value='';document.getElementById('rmOldHint').textContent='';document.getElementById('rmDate').value=new Date().toISOString().split('T')[0];document.getElementById('rmBy').value=CU.name;document.getElementById('rateModal').classList.add('show');setTimeout(autoFill,50);}
+function openEditParty(){if(!CU.perms.edit){toast('No edit permission!','err');return;}const p=MEM.parties.find(x=>x.id===curPId);document.getElementById('partyModalTitle').textContent='Edit Party';document.getElementById('pmId').value=p.id;document.getElementById('pmName').value=p.name;document.getElementById('pmContact').value=p.contact||'';document.getElementById('partyModal').classList.add('show');}
+async function deleteParty(){if(!CU.perms.del){toast('No delete permission!','err');return;}const p=MEM.parties.find(x=>x.id===curPId);if(!confirm(`Delete "${p.name}"? All rate records will also be deleted.`))return;MEM.parties=MEM.parties.filter(x=>x.id!==curPId);MEM.rates=MEM.rates.filter(r=>r.partyId!==curPId);await saveParties();await saveRates();closePartyDetail();renderParties(pQ);fillPartyDrop();toast('Deleted','ok');}
+function openAddParty(){if(!CU.perms.add){toast('No add permission!','err');return;}document.getElementById('partyModalTitle').textContent='Add Party';document.getElementById('pmId').value='';document.getElementById('pmName').value='';document.getElementById('pmContact').value='';document.getElementById('partyModal').classList.add('show');}
+async function saveParty(){const name=document.getElementById('pmName').value.trim();if(!name){toast('Name required!','err');return;}const eid=document.getElementById('pmId').value;if(eid){Object.assign(MEM.parties.find(p=>p.id===eid),{name:name.toUpperCase(),contact:document.getElementById('pmContact').value});toast('Updated!','ok');renderPartyBody();}else{MEM.parties.push({id:'par'+Date.now(),name:name.toUpperCase(),contact:document.getElementById('pmContact').value});toast('Added!','ok');}await saveParties();closeModal('partyModal');renderParties(pQ);fillPartyDrop();}
+
+// ═══════════════════════════════════════
+//  ACCESS
+// ═══════════════════════════════════════
+function renderAccess(){
+  const el=document.getElementById('accessContent');
+  if(!CU.perms.access){el.innerHTML=`<div class="noperm">Only Admins can manage staff access.</div><div class="scard"><div class="shead">Your Permissions</div>${[{k:'edit',l:'Edit'},{k:'add',l:'Add'},{k:'del',l:'Delete'},{k:'access',l:'Admin'}].map(x=>`<div class="aitem"><div class="aun">${x.l}</div><span class="pill ${CU.perms[x.k]?'pill-on':'pill-off'}">${CU.perms[x.k]?'Allowed':'Denied'}</span></div>`).join('')}</div>`;return;}
+  el.innerHTML=`<div class="scard"><div class="shead">Staff Members (${MEM.users.length})</div>${MEM.users.map(u=>{const b=u.role==='admin'?`<span class="badge-a">ADMIN</span>`:u.role==='editor'?`<span class="badge-e">EDITOR</span>`:`<span class="badge-v">VIEWER</span>`;const pills=[{k:'edit',l:'Edit'},{k:'add',l:'Add'},{k:'del',l:'Del'},{k:'access',l:'Admin'}].map(x=>`<span class="pill ${u.perms[x.k]?'pill-on':'pill-off'}" onclick="togglePerm('${u.id}','${x.k}')">${x.l}</span>`).join('');return`<div class="aitem"><div><div class="aun">${u.name} ${b}</div><div class="aur">@${u.username}</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;"><div class="ppills">${pills}</div><div style="display:flex;gap:6px;"><span class="pill pill-on" style="cursor:pointer;" onclick="openEditUser('${u.id}')">Edit</span>${u.id!==CU.id?`<span class="pill" style="background:#fce8e6;color:#c62828;border-color:#f5c6cb;cursor:pointer;" onclick="removeUser('${u.id}')">Remove</span>`:''}</div></div></div>`;}).join('')}</div>`;
+}
+async function togglePerm(uid,perm){if(perm==='access'&&uid===CU.id){toast("Can't remove own admin!",'err');return;}const u=MEM.users.find(u=>u.id===uid);u.perms[perm]=!u.perms[perm];await saveUsers();renderAccess();toast(`${u.name}: ${perm} ${u.perms[perm]?'ON':'OFF'}`);}
+function openAddUser(){document.getElementById('userModalTitle').textContent='Add Staff';document.getElementById('umId').value='';document.getElementById('umName').value='';document.getElementById('umUser').value='';document.getElementById('umPass').value='';document.getElementById('umRole').value='viewer';['upEdit','upAdd','upDel','upAccess'].forEach(id=>document.getElementById(id).checked=false);document.getElementById('userModal').classList.add('show');}
+function openEditUser(uid){const u=MEM.users.find(x=>x.id===uid);document.getElementById('userModalTitle').textContent='Edit Staff';document.getElementById('umId').value=uid;document.getElementById('umName').value=u.name;document.getElementById('umUser').value=u.username;document.getElementById('umPass').value=u.pass;document.getElementById('umRole').value=u.role;document.getElementById('upEdit').checked=u.perms.edit;document.getElementById('upAdd').checked=u.perms.add;document.getElementById('upDel').checked=u.perms.del;document.getElementById('upAccess').checked=u.perms.access;document.getElementById('userModal').classList.add('show');}
+async function saveUser(){const n=document.getElementById('umName').value.trim(),un=document.getElementById('umUser').value.trim(),pw=document.getElementById('umPass').value.trim();if(!n||!un||!pw){toast('Fill all fields!','err');return;}const perms={edit:document.getElementById('upEdit').checked,add:document.getElementById('upAdd').checked,del:document.getElementById('upDel').checked,access:document.getElementById('upAccess').checked};const eid=document.getElementById('umId').value;if(eid){Object.assign(MEM.users.find(u=>u.id===eid),{name:n,username:un,pass:pw,role:document.getElementById('umRole').value,perms});toast('Updated!','ok');}else{if(MEM.users.find(u=>u.username===un)){toast('Username exists!','err');return;}MEM.users.push({id:'u'+Date.now(),name:n,username:un,pass:pw,role:document.getElementById('umRole').value,perms});toast('Staff added!','ok');}await saveUsers();closeModal('userModal');renderAccess();}
+async function removeUser(uid){const u=MEM.users.find(x=>x.id===uid);if(!confirm(`Remove ${u.name}?`))return;MEM.users=MEM.users.filter(x=>x.id!==uid);await saveUsers();renderAccess();toast(`${u.name} removed.`,'ok');}
+
+// ═══════════════════════════════════════
+//  MANAGE PAGE
+// ═══════════════════════════════════════
+function renderManage(){
+  const el=document.getElementById('manageContent'); if(!el) return;
+  const canE=CU&&(CU.perms.edit||CU.perms.add), canD=CU&&CU.perms.del, canA=CU&&CU.perms.add;
+  const prows=MEM.parties.map(p=>{const rc=MEM.rates.filter(r=>r.partyId===p.id).length;return`<div class="mgitem" id="mp-${p.id}"><span style="font-size:18px;">🏭</span><span class="mgin">${p.name}</span><span class="mgcnt">${rc}</span><div class="mgact">${canE?`<button class="meb" onclick="inlineEditParty('${p.id}')">Edit</button>`:''}${canD?`<button class="mdb" onclick="delPartyMg('${p.id}')">Del</button>`:''}</div></div>`;}).join('')||'<div class="mgempty">No parties</div>';
+  const mrows=MEM.mats.map((m,i)=>{const rc=MEM.rates.filter(r=>r.item===m).length;return`<div class="mgitem" id="mm-${i}"><span style="font-size:18px;">📦</span><span class="mgin">${m}</span><span class="mgcnt">${rc}</span><div class="mgact">${canE?`<button class="meb" onclick="inlineEditMat(${i})">Edit</button>`:''}${canD?`<button class="mdb" onclick="delMat(${i})">Del</button>`:''}</div></div>`;}).join('')||'<div class="mgempty">No materials</div>';
+  el.innerHTML=`${!canE&&!canA?'<div class="noperm2">View-only access.</div>':''}
+  <div class="mgsec"><div class="mgsech"><span class="mgsechi">🏭 Parties <span style="background:#1a73e8;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;">${MEM.parties.length}</span></span>${canA?`<button class="mgaddb" onclick="showAddParty()">+ Add</button>`:''}</div><div class="mgiform" id="addPartyF"><input class="mginput" id="newPartyN" placeholder="Party name..." onkeydown="if(event.key==='Enter')saveNewParty()"><button class="mgisav" onclick="saveNewParty()">Save</button><button class="mgicnl" onclick="hideAddParty()">X</button></div>${prows}</div>
+  <div class="mgsec"><div class="mgsech"><span class="mgsechi">📦 Materials <span style="background:#1a73e8;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;">${MEM.mats.length}</span></span>${canA?`<button class="mgaddb" onclick="showAddMat()">+ Add</button>`:''}</div><div class="mgiform" id="addMatF"><input class="mginput" id="newMatN" placeholder="Material name..." onkeydown="if(event.key==='Enter')saveNewMat()"><button class="mgisav" onclick="saveNewMat()">Save</button><button class="mgicnl" onclick="hideAddMat()">X</button></div>${mrows}</div>`;
+}
+function showAddParty(){document.getElementById('addPartyF').classList.add('show');document.getElementById('newPartyN').focus();}
+function hideAddParty(){document.getElementById('addPartyF').classList.remove('show');document.getElementById('newPartyN').value='';}
+async function saveNewParty(){const n=document.getElementById('newPartyN').value.trim().toUpperCase();if(!n){toast('Enter name!','err');return;}if(MEM.parties.find(p=>p.name===n)){toast('Already exists!','err');return;}MEM.parties.push({id:'par'+Date.now(),name:n,contact:''});await saveParties();hideAddParty();renderManage();renderParties(pQ);fillPartyDrop();toast('Party added!','ok');}
+function inlineEditParty(pid){const p=MEM.parties.find(x=>x.id===pid);const row=document.getElementById('mp-'+pid);if(!row)return;row.innerHTML=`<span style="font-size:18px;">🏭</span><input class="mginput" id="ep-${pid}" value="${p.name}" style="flex:1;" onkeydown="if(event.key==='Enter')saveEditParty('${pid}')"><button class="mgisav" onclick="saveEditParty('${pid}')">Save</button><button class="mgicnl" onclick="renderManage()">X</button>`;document.getElementById('ep-'+pid).focus();}
+async function saveEditParty(pid){const v=document.getElementById('ep-'+pid)?.value.trim().toUpperCase();if(!v){toast('Empty!','err');return;}MEM.parties.find(x=>x.id===pid).name=v;await saveParties();renderManage();renderParties(pQ);fillPartyDrop();toast('Updated!','ok');}
+async function delPartyMg(pid){const p=MEM.parties.find(x=>x.id===pid);const rc=MEM.rates.filter(r=>r.partyId===pid).length;if(!confirm(rc>0?`Delete "${p.name}"? Also deletes ${rc} records.`:`Delete "${p.name}"?`))return;MEM.parties=MEM.parties.filter(x=>x.id!==pid);MEM.rates=MEM.rates.filter(r=>r.partyId!==pid);await saveParties();await saveRates();renderManage();renderParties(pQ);renderRates(rQ);fillPartyDrop();toast('Deleted!','ok');}
+function showAddMat(){document.getElementById('addMatF').classList.add('show');document.getElementById('newMatN').focus();}
+function hideAddMat(){document.getElementById('addMatF').classList.remove('show');document.getElementById('newMatN').value='';}
+async function saveNewMat(){const n=document.getElementById('newMatN').value.trim();if(!n){toast('Enter name!','err');return;}if(MEM.mats.includes(n)){toast('Already exists!','err');return;}MEM.mats.push(n);await saveMats();hideAddMat();renderManage();fillItemDrop();toast('Added!','ok');}
+function inlineEditMat(i){const row=document.getElementById('mm-'+i);if(!row)return;row.innerHTML=`<span style="font-size:18px;">📦</span><input class="mginput" id="em-${i}" value="${MEM.mats[i]}" style="flex:1;" onkeydown="if(event.key==='Enter')saveEditMat(${i})"><button class="mgisav" onclick="saveEditMat(${i})">Save</button><button class="mgicnl" onclick="renderManage()">X</button>`;document.getElementById('em-'+i).focus();}
+async function saveEditMat(i){const v=document.getElementById('em-'+i)?.value.trim();if(!v){toast('Empty!','err');return;}const old=MEM.mats[i];MEM.mats[i]=v;MEM.rates.forEach(r=>{if(r.item===old)r.item=v;});await saveMats();await saveRates();renderManage();fillItemDrop();renderRates(rQ);toast('Updated!','ok');}
+async function delMat(i){const n=MEM.mats[i];const rc=MEM.rates.filter(r=>r.item===n).length;if(!confirm(rc>0?`Delete "${n}"? Used in ${rc} records.`:`Delete "${n}"?`))return;MEM.mats.splice(i,1);await saveMats();renderManage();fillItemDrop();toast('Deleted!','ok');}
+
+// ═══════════════════════════════════════
+//  UTILITY
+// ═══════════════════════════════════════
+function fillPartyDrop(){document.getElementById('rmParty').innerHTML='<option value="">— Select Party —</option>'+MEM.parties.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');}
+function fillItemDrop(){const s=document.getElementById('rmItem');if(!s)return;const cur=s.value;s.innerHTML=MEM.mats.map(m=>`<option value="${m}"${m===cur?' selected':''}>${m}</option>`).join('');}
+function showPage(n,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-'+n).classList.add('active');document.querySelectorAll('.bni').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('appTitle').textContent={list:'Rate Masters',parties:'Parties',manage:'Manage',access:'Access Control'}[n]||n;if(n==='manage')renderManage();}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+document.querySelectorAll('.moverlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('show');}));
+let tt;
+function toast(m,type=''){const t=document.getElementById('toast');t.textContent=m;t.className='show';if(type)t.classList.add(type);clearTimeout(tt);tt=setTimeout(()=>{t.className='';},2800);}
+</script>
+
+<!-- INSTALL BANNER -->
+<div id="installBanner" style="display:none;position:fixed;bottom:80px;left:10px;right:10px;background:linear-gradient(135deg,#1a73e8,#0d47a1);color:#fff;border-radius:16px;padding:14px 16px;z-index:9999;box-shadow:0 6px 24px #0004;align-items:center;gap:12px;max-width:480px;margin:0 auto;">
+  <span style="font-size:30px;">♻</span>
+  <div style="flex:1;">
+    <div style="font-weight:700;font-size:14px;">Install Rate Update</div>
+    <div style="font-size:12px;opacity:.85;margin-top:2px;">Add to home screen — works like a real app</div>
+  </div>
+  <button onclick="doInstall()" style="background:#fff;color:#1a73e8;border:none;border-radius:10px;padding:8px 16px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;">Install ↓</button>
+  <button onclick="document.getElementById('installBanner').style.display='none'" style="background:rgba(255,255,255,0.2);color:#fff;border:none;border-radius:50%;width:28px;height:28px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+</div>
+
+<script>
+let _prompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); _prompt = e;
+  setTimeout(() => { document.getElementById('installBanner').style.display='flex'; }, 2500);
+});
+function doInstall() {
+  if(!_prompt) return;
+  _prompt.prompt();
+  _prompt.userChoice.then(() => { _prompt=null; document.getElementById('installBanner').style.display='none'; });
+}
+window.addEventListener('appinstalled', () => { document.getElementById('installBanner').style.display='none'; });
+if('serviceWorker' in navigator) {
+  const sw = `self.addEventListener('install',()=>self.skipWaiting());self.addEventListener('activate',()=>clients.claim());self.addEventListener('fetch',e=>{if(e.request.url.includes('firebase')||e.request.url.includes('google'))return;e.respondWith(fetch(e.request).catch(()=>new Response('')));});`;
+  const swBlob = new Blob([sw],{type:'text/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
+}
+</script>
+</body>
+</html>
