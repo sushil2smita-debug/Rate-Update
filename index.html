@@ -987,7 +987,7 @@ function openPartyDetail(id){
 function renderPartyBody(){
   const p=MEM.parties.find(x=>x.id===curPId); if(!p) return;
   const rels=MEM.rates.filter(r=>r.partyId===p.id).sort((a,b)=>parseDateStr(b.timestamp)-parseDateStr(a.timestamp));
-  const imap={}; rels.forEach(r=>{if(!imap[r.item])imap[r.item]=r;});
+  const imap={}; rels.forEach(r=>{if(!imap[r.item]||parseDateStr(r.changeDate)>parseDateStr(imap[r.item].changeDate)||( parseDateStr(r.changeDate).getTime()===parseDateStr(imap[r.item].changeDate).getTime()&&parseDateStr(r.timestamp)>parseDateStr(imap[r.item].timestamp)))imap[r.item]=r;});
   const grps={}; rels.forEach(r=>{if(!grps[r.changeDate])grps[r.changeDate]=[];grps[r.changeDate].push(r);});
   const dates=Object.keys(grps).sort((a,b)=>parseDateStr(b)-parseDateStr(a));
   const curHTML=Object.values(imap).length?`<div class="crc"><div class="crh">Current Rates</div><div class="crg">${Object.values(imap).map(r=>`<div class="cri"><div class="crin">${r.item}</div><div class="crir"><span class="dot dot-r"></span>Rs.${r.newRate.toFixed(2)}</div><div class="crid">${r.changeDate}</div></div>`).join('')}</div></div>`:'';
