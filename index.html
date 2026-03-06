@@ -240,7 +240,7 @@ body{font-family:'Roboto',sans-serif;background:#f5f5f5;color:#212121;font-size:
 .rtable{width:100%;min-width:650px;border-collapse:collapse;background:#fff;}
 .rtable th{background:#fff;border-bottom:2px solid #e0e0e0;padding:10px 12px;font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;position:sticky;top:0;z-index:10;}
 .rtable td{padding:11px 12px;border-bottom:1px solid #f5f5f5;font-size:13px;vertical-align:middle;white-space:nowrap;}
-.rtable tr:hover td{background:#f8f9ff;cursor:pointer;}
+.rtable tr:hover td{background:#f8f9ff;} .rtable td{cursor:pointer;}
 .rt-party{color:#6200ea;font-weight:700;font-size:13px;}
 .rt-new{color:#212121;font-weight:700;font-size:14px;display:flex;align-items:center;gap:5px;}
 .rt-old{color:#e65100;font-style:italic;font-weight:500;font-size:13px;}
@@ -797,14 +797,14 @@ function renderRates(q=''){
     const diff=parseFloat((r.newRate-prevRate).toFixed(2));
     const ds=prevRate>0?(diff>0?'+'+diff.toFixed(2):diff.toFixed(2)):'—';
     const dc=diff>0?'rt-diff-p':diff<0?'rt-diff-n':'rt-diff-z';
-    return `<tr onclick="openPartyDetail('${r.partyId}')">
-      <td><span class="rt-party">${p?p.name:'—'}</span></td>
-      <td><span class="rt-new"><span class="dot dot-r"></span>${r.newRate.toFixed(2)}</span></td>
-      <td><span class="rt-old">${prevRate>0?prevRate.toFixed(2):'—'}</span></td>
-      <td><span class="${dc}">${ds}</span></td>
-      <td><span class="rt-date"><span class="dot dot-y"></span>${r.changeDate}</span></td>
-      <td><span class="rt-item">${r.item}</span></td>
-      <td><span class="rt-arr">›</span></td>
+    return `<tr onclick="openPartyDetail('${r.partyId}')" style="cursor:pointer;">
+      <td onclick="openPartyDetail('${r.partyId}')"><span class="rt-party">${p?p.name:'—'}</span></td>
+      <td onclick="openPartyDetail('${r.partyId}')"><span class="rt-new"><span class="dot dot-r"></span>${r.newRate.toFixed(2)}</span></td>
+      <td onclick="openPartyDetail('${r.partyId}')"><span class="rt-old">${prevRate>0?prevRate.toFixed(2):'—'}</span></td>
+      <td onclick="openPartyDetail('${r.partyId}')"><span class="${dc}">${ds}</span></td>
+      <td onclick="openPartyDetail('${r.partyId}')"><span class="rt-date"><span class="dot dot-y"></span>${r.changeDate}</span></td>
+      <td onclick="openPartyDetail('${r.partyId}')"><span class="rt-item">${r.item}</span></td>
+      <td onclick="openPartyDetail('${r.partyId}')" style="text-align:center;"><span class="rt-arr" style="font-size:22px;font-weight:900;color:#1a73e8;">›</span></td>
     </tr>`;
   }).join('');
 
@@ -1014,7 +1014,7 @@ function renderPartyBody(){
       </table>
     </div>
   </div>`:`<div style="padding:40px;text-align:center;color:#999;background:#fff;margin-top:8px;">No history.${CU.perms.add?`<br><button class="rlbtn" style="margin-top:12px;font-size:14px;" onclick="addRateForParty()">+ Add Entry</button>`:''}</div>`;
-  document.getElementByIddocument.getElementById('partyDetailBody').innerHTML=`<div class="dhdr"><div class="dname">${p.name}</div>${p.contact?`<div style="font-size:12px;color:#888;margin-top:4px;">${p.contact}</div>`:''}</div>${curHTML}${tlHTML}`;
+  document.getElementById('partyDetailBody').innerHTML=`<div class="dhdr"><div class="dname">${p.name}</div>${p.contact?`<div style="font-size:12px;color:#888;margin-top:4px;">${p.contact}</div>`:''}</div>${curHTML}${tlHTML}`;
 }
 function toggleDG(h){const d=h.nextElementSibling;const t=h.querySelector('.dgt');const open=d.style.display!=='none';d.style.display=open?'none':'block';t.classList.toggle('open',!open);}
 function editFromTL(rid,e){e.stopPropagation();const r=MEM.rates.find(x=>x.id===rid);document.getElementById('rateModalTitle').textContent='Edit Rate';document.getElementById('rmId').value=r.id;document.getElementById('rmParty').value=r.partyId;document.getElementById('rmItem').value=r.item;document.getElementById('rmOld').value=r.oldRate;document.getElementById('rmNew').value=r.newRate;document.getElementById('rmOldHint').textContent='';document.getElementById('rmDate').value='';document.getElementById('rmBy').value=CU.name;document.getElementById('rateModal').classList.add('show');}
