@@ -215,6 +215,52 @@ body{font-family:'Roboto',sans-serif;background:#f5f5f5;color:#212121;font-size:
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 #toast.ok{background:#1e7e34;}
 #toast.err{background:#c62828;}
+
+/* RATE CARD STYLES */
+.rcard{background:#fff;margin:8px 12px;border-radius:12px;box-shadow:0 1px 4px #0001;border:1px solid #f0f0f0;overflow:hidden;cursor:pointer;transition:box-shadow .2s;}
+.rcard:hover{box-shadow:0 3px 12px #0002;}
+.rcard-top{padding:12px 14px 8px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.rcard-name{font-size:14px;font-weight:700;color:#1a73e8;flex:1;line-height:1.3;}
+.rcard-item{font-size:11px;color:#888;margin-top:2px;}
+.rcard-rates{display:flex;align-items:center;gap:6px;padding:0 14px 12px;flex-wrap:wrap;}
+.rcard-new{font-size:20px;font-weight:700;color:#212121;display:flex;align-items:center;gap:4px;}
+.rcard-arr{color:#bbb;font-size:16px;}
+.rcard-old{font-size:15px;color:#888;text-decoration:line-through;}
+.rcard-diff-up{background:#e6f4ea;color:#2e7d32;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;}
+.rcard-diff-dn{background:#fce8e6;color:#c62828;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;}
+.rcard-diff-eq{background:#f5f5f5;color:#888;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;}
+.rcard-footer{border-top:1px solid #f5f5f5;padding:7px 14px;display:flex;align-items:center;justify-content:space-between;}
+.rcard-date{font-size:11px;color:#f57f17;font-weight:600;display:flex;align-items:center;gap:4px;}
+.rcard-by{font-size:11px;color:#aaa;}
+.rcard-cnt{font-size:11px;color:#1a73e8;font-weight:600;}
+.rates-pg-top{background:#f5f5f5;padding:6px 12px 0;}
+
+/* RATE TABLE STYLES */
+.rtable-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.rtable{width:100%;min-width:650px;border-collapse:collapse;background:#fff;}
+.rtable th{background:#fff;border-bottom:2px solid #e0e0e0;padding:10px 12px;font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;position:sticky;top:0;z-index:10;}
+.rtable td{padding:11px 12px;border-bottom:1px solid #f5f5f5;font-size:13px;vertical-align:middle;white-space:nowrap;}
+.rtable tr:hover td{background:#f8f9ff;cursor:pointer;}
+.rt-party{color:#6200ea;font-weight:700;font-size:13px;}
+.rt-new{color:#212121;font-weight:700;font-size:14px;display:flex;align-items:center;gap:5px;}
+.rt-old{color:#e65100;font-style:italic;font-weight:500;font-size:13px;}
+.rt-diff-p{color:#2e7d32;font-weight:700;}
+.rt-diff-n{color:#c62828;font-weight:700;}
+.rt-diff-z{color:#888;}
+.rt-date{color:#f57f17;font-weight:600;display:flex;align-items:center;gap:4px;}
+.rt-item{color:#444;max-width:140px;overflow:hidden;text-overflow:ellipsis;}
+.rt-arr{color:#1a73e8;font-size:18px;font-weight:700;padding:0 4px;}
+/* HISTORY TABLE */
+.htable-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0;}
+.htable{width:100%;min-width:600px;border-collapse:collapse;}
+.htable th{background:#e8f0fe;padding:9px 12px;font-size:11px;font-weight:700;color:#1a73e8;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;}
+.htable td{padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:13px;vertical-align:middle;white-space:nowrap;}
+.htable tr:last-child td{border-bottom:none;}
+.htable tr:hover td{background:#f8f9ff;}
+.ht-party{color:#6200ea;font-weight:700;}
+.ht-id{font-family:monospace;font-size:11px;color:#999;}
+.ht-old{color:#e65100;font-style:italic;font-weight:500;}
+.ht-new{color:#212121;font-weight:700;display:flex;align-items:center;gap:4px;}
 </style>
 </head>
 <body>
@@ -299,9 +345,7 @@ body{font-family:'Roboto',sans-serif;background:#f5f5f5;color:#212121;font-size:
         <button class="ibtn" style="color:#1a73e8;font-size:22px;" onclick="sortRates()">⇅</button>
       </div>
       <div class="lview">
-        <div class="lhdr" style="grid-template-columns:2fr 90px 70px 60px 110px 24px;">
-          <span>Party / Item</span><span>Latest</span><span>Prev</span><span>Diff</span><span>Date</span><span></span>
-        </div>
+        
         <div id="rateList"></div>
       </div>
       <button class="fab" id="fabR" onclick="openAddRate()">+</button>
@@ -714,67 +758,68 @@ function closePopup(){ document.getElementById('npopup').classList.remove('in');
 // ═══════════════════════════════════════
 function renderRates(q=''){
   const el=document.getElementById('rateList');
-  if(!MEM.rates.length){el.innerHTML='<div style="padding:40px;text-align:center;color:#999;">No records yet. Tap + to add.</div>';return;}
+  if(!MEM.rates.length){
+    el.innerHTML='<div style="padding:60px 20px;text-align:center;color:#999;"><div style="font-size:48px;margin-bottom:12px;">📋</div><div style="font-size:15px;font-weight:500;color:#555;margin-bottom:6px;">No rates yet</div><div style="font-size:13px;">Tap + to add first rate entry</div></div>';
+    return;
+  }
 
-  // For each party+item, find the LATEST entry by changeDate
+  // Latest entry per party+item
   const latestMap={};
   MEM.rates.forEach(r=>{
     const key=r.partyId+'__'+r.item;
-    const existing=latestMap[key];
-    if(!existing){latestMap[key]=r;return;}
-    // Compare changeDates — pick the most recent one
-    const rDate=parseDateStr(r.changeDate);
-    const eDate=parseDateStr(existing.changeDate);
-    if(rDate>eDate) latestMap[key]=r;
-    else if(rDate.getTime()===eDate.getTime()){
-      // same date — pick later timestamp
-      if(parseDateStr(r.timestamp)>parseDateStr(existing.timestamp)) latestMap[key]=r;
-    }
+    const ex=latestMap[key];
+    if(!ex){latestMap[key]=r;return;}
+    const rd=parseDateStr(r.changeDate),ed=parseDateStr(ex.changeDate);
+    if(rd>ed||(rd.getTime()===ed.getTime()&&parseDateStr(r.timestamp)>parseDateStr(ex.timestamp)))
+      latestMap[key]=r;
   });
 
   let d=Object.values(latestMap);
 
-  // Filter by search
   if(q){
     const ql=q.toLowerCase();
     d=d.filter(r=>{
       const p=MEM.parties.find(x=>x.id===r.partyId);
-      return (p&&p.name.toLowerCase().includes(ql))||r.item.toLowerCase().includes(ql);
+      return(p&&p.name.toLowerCase().includes(ql))||r.item.toLowerCase().includes(ql);
     });
   }
 
-  // Sort by changeDate descending (most recent first)
   d.sort((a,b)=>parseDateStr(b.changeDate)-parseDateStr(a.changeDate)||parseDateStr(b.timestamp)-parseDateStr(a.timestamp));
 
   if(!d.length){el.innerHTML='<div style="padding:40px;text-align:center;color:#999;">No results found</div>';return;}
 
-  el.innerHTML=d.map(r=>{
+  const rows=d.map(r=>{
     const p=MEM.parties.find(x=>x.id===r.partyId);
-    // Get ALL entries for this party+item sorted latest first
-    const allEntries=MEM.rates
+    const all=MEM.rates
       .filter(x=>x.partyId===r.partyId&&x.item===r.item)
       .sort((a,b)=>parseDateStr(b.changeDate)-parseDateStr(a.changeDate)||parseDateStr(b.timestamp)-parseDateStr(a.timestamp));
-    // Previous rate = second latest entry's newRate
-    const prevRate=allEntries.length>1 ? allEntries[1].newRate : 0;
+    const prevRate=all.length>1?all[1].newRate:0;
     const diff=parseFloat((r.newRate-prevRate).toFixed(2));
-    const ds=diff>0?'+'+diff.toFixed(2):diff===0?'0.00':diff.toFixed(2);
-    const dc=diff>0?'dpos':diff<0?'dneg':'';
-    const totalChanges=allEntries.length;
-    return `<div class="lrow" style="grid-template-columns:2fr 90px 70px 60px 110px 24px;" onclick="openPartyDetail('${r.partyId}')">
-      <div>
-        <div class="pname" style="font-size:13px;">${p?p.name:'—'}</div>
-        <div style="font-size:11px;color:#888;margin-top:2px;">${r.item} &nbsp;·&nbsp; ${totalChanges} change${totalChanges!==1?'s':''}</div>
-      </div>
-      <span class="rnew"><span class="dot dot-r"></span>${r.newRate.toFixed(2)}</span>
-      <span class="rold" style="font-size:13px;">${prevRate>0?prevRate.toFixed(2):'—'}</span>
-      <span class="${dc}" style="font-weight:700;">${prevRate>0?ds:'—'}</span>
-      <span class="cdate"><span class="dot dot-y"></span>${r.changeDate}</span>
-      <span class="rarr">›</span>
-    </div>`;
+    const ds=prevRate>0?(diff>0?'+'+diff.toFixed(2):diff.toFixed(2)):'—';
+    const dc=diff>0?'rt-diff-p':diff<0?'rt-diff-n':'rt-diff-z';
+    return `<tr onclick="openPartyDetail('${r.partyId}')">
+      <td><span class="rt-party">${p?p.name:'—'}</span></td>
+      <td><span class="rt-new"><span class="dot dot-r"></span>${r.newRate.toFixed(2)}</span></td>
+      <td><span class="rt-old">${prevRate>0?prevRate.toFixed(2):'—'}</span></td>
+      <td><span class="${dc}">${ds}</span></td>
+      <td><span class="rt-date"><span class="dot dot-y"></span>${r.changeDate}</span></td>
+      <td><span class="rt-item">${r.item}</span></td>
+      <td><span class="rt-arr">›</span></td>
+    </tr>`;
   }).join('');
+
+  el.innerHTML=`<div class="rtable-wrap"><table class="rtable">
+    <thead><tr>
+      <th>Party Name</th><th>New Rate</th><th>Old Rate</th>
+      <th>Difference</th><th>Change Date</th><th>Item</th><th></th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
 }
 function searchRates(q){rQ=q;renderRates(q);}
-function sortRates(){renderRates(rQ);toast('Sorted by latest date');}
+function sortRates(){renderRates(rQ);toast('Sorted by latest');}
+
+
 
 
 // ═══════════════════════════════════════
@@ -937,8 +982,39 @@ function renderPartyBody(){
   const grps={}; rels.forEach(r=>{if(!grps[r.changeDate])grps[r.changeDate]=[];grps[r.changeDate].push(r);});
   const dates=Object.keys(grps).sort((a,b)=>parseDateStr(b)-parseDateStr(a));
   const curHTML=Object.values(imap).length?`<div class="crc"><div class="crh">Current Rates</div><div class="crg">${Object.values(imap).map(r=>`<div class="cri"><div class="crin">${r.item}</div><div class="crir"><span class="dot dot-r"></span>Rs.${r.newRate.toFixed(2)}</div><div class="crid">${r.changeDate}</div></div>`).join('')}</div></div>`:'';
-  const tlHTML=dates.length?`<div class="phsec"><div class="phhdr"><span class="phtitle">Rate History <span class="hcnt">${rels.length}</span></span>${CU.perms.add?`<button class="rlbtn" onclick="addRateForParty()">+ Add</button>`:''}</div>${dates.map((dt,i)=>{const es=grps[dt];return`<div class="dg"><div class="dgh" onclick="toggleDG(this)"><span>📅</span><span class="dgd">${dt}</span><span class="dgs">${es.length} item${es.length!==1?'s':''}</span><span class="dgt ${i===0?'open':''}">›</span></div><div style="${i===0?'':'display:none'}">${es.map(r=>{const ds=r.diff>0?'+'+r.diff.toFixed(2):r.diff.toFixed(2);const up=r.diff>0,dn=r.diff<0;return`<div class="tlrow"><span class="tldot ${up?'tldot-g':'tldot-r'}"></span><div class="tlcon"><div class="tln">${r.item}</div><div class="tlrt"><span class="tlo">Rs.${r.oldRate.toFixed(2)}</span><span class="tla">→</span><span class="tlnw"><span class="dot dot-r"></span>Rs.${r.newRate.toFixed(2)}</span><span class="tld ${up?'tld-u':dn?'tld-d':'tld-s'}">${up?'▲':dn?'▼':'—'} ${ds}</span></div><div class="tlm"><span>By: <span class="tlb">${r.updatedBy}</span></span><span class="tlts">${r.timestamp}</span></div><div class="tlact">${CU.perms.edit?`<button class="tlbtn" onclick="editFromTL('${r.id}',event)">Edit</button>`:''} ${CU.perms.del?`<button class="tlbtn del" onclick="delFromTL('${r.id}',event)">Delete</button>`:''}</div></div></div>`;}).join('')}</div></div>`;}).join('')}</div>`:`<div style="padding:40px;text-align:center;color:#999;background:#fff;margin-top:8px;">No history.${CU.perms.add?`<br><button class="rlbtn" style="margin-top:12px;font-size:14px;" onclick="addRateForParty()">+ Add Entry</button>`:''}</div>`;
-  document.getElementById('partyDetailBody').innerHTML=`<div class="dhdr"><div class="dname">${p.name}</div>${p.contact?`<div style="font-size:12px;color:#888;margin-top:4px;">${p.contact}</div>`:''}</div>${curHTML}${tlHTML}`;
+  const tlHTML=rels.length?`<div>
+    <div style="background:#e8f0fe;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #1a73e8;">
+      <span style="font-weight:700;color:#1a73e8;font-size:13px;">Related Rate Masters &nbsp;<span style="background:#1a73e8;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;">${rels.length}</span></span>
+      ${CU.perms.add?`<button class="rlbtn" onclick="addRateForParty()">+ Add</button>`:''}
+    </div>
+    <div class="htable-wrap">
+      <table class="htable">
+        <thead><tr>
+          <th>Party Name</th><th>ID</th><th>Item</th><th>Old Rate</th><th>New Rate</th><th>Change Date</th><th>By</th><th></th>
+        </tr></thead>
+        <tbody>
+          ${rels.map(r=>{
+            const ds=r.diff>0?'+'+r.diff.toFixed(2):r.diff.toFixed(2);
+            const dc=r.diff>0?'rt-diff-p':r.diff<0?'rt-diff-n':'rt-diff-z';
+            return `<tr>
+              <td><span class="ht-party">${p.name}</span></td>
+              <td><span class="ht-id">${r.id.slice(-8)}</span></td>
+              <td>${r.item}</td>
+              <td><span class="ht-old">${r.oldRate.toFixed(2)}</span></td>
+              <td><span class="ht-new"><span class="dot dot-r"></span>${r.newRate.toFixed(2)}</span></td>
+              <td><span class="rt-date"><span class="dot dot-y"></span>${r.changeDate}</span></td>
+              <td style="color:#555;">${r.updatedBy}</td>
+              <td style="display:flex;gap:4px;padding:8px;">
+                ${CU.perms.edit?`<button class="tlbtn" onclick="editFromTL('${r.id}',event)">Edit</button>`:''}
+                ${CU.perms.del?`<button class="tlbtn del" onclick="delFromTL('${r.id}',event)">Del</button>`:''}
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`:`<div style="padding:40px;text-align:center;color:#999;background:#fff;margin-top:8px;">No history.${CU.perms.add?`<br><button class="rlbtn" style="margin-top:12px;font-size:14px;" onclick="addRateForParty()">+ Add Entry</button>`:''}</div>`;
+  document.getElementByIddocument.getElementById('partyDetailBody').innerHTML=`<div class="dhdr"><div class="dname">${p.name}</div>${p.contact?`<div style="font-size:12px;color:#888;margin-top:4px;">${p.contact}</div>`:''}</div>${curHTML}${tlHTML}`;
 }
 function toggleDG(h){const d=h.nextElementSibling;const t=h.querySelector('.dgt');const open=d.style.display!=='none';d.style.display=open?'none':'block';t.classList.toggle('open',!open);}
 function editFromTL(rid,e){e.stopPropagation();const r=MEM.rates.find(x=>x.id===rid);document.getElementById('rateModalTitle').textContent='Edit Rate';document.getElementById('rmId').value=r.id;document.getElementById('rmParty').value=r.partyId;document.getElementById('rmItem').value=r.item;document.getElementById('rmOld').value=r.oldRate;document.getElementById('rmNew').value=r.newRate;document.getElementById('rmOldHint').textContent='';document.getElementById('rmDate').value='';document.getElementById('rmBy').value=CU.name;document.getElementById('rateModal').classList.add('show');}
