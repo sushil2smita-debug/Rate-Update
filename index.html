@@ -812,7 +812,7 @@ function renderRates(q=''){
     });
   }
 
-  d.sort((a,b)=>parseDateStr(b.changeDate)-parseDateStr(a.changeDate)||parseDateStr(b.timestamp)-parseDateStr(a.timestamp));
+  d.sort((a,b)=>parseDateStr(b.changeDate)-parseDateStr(a.changeDate)||b.newRate-a.newRate||parseDateStr(b.timestamp)-parseDateStr(a.timestamp));
 
   if(!d.length){el.innerHTML='<div style="padding:40px;text-align:center;color:#999;">No results found</div>';return;}
 
@@ -850,7 +850,7 @@ function renderRates(q=''){
   </table></div>`;
 }
 function searchRates(q){rQ=q;renderRates(q);}
-function sortRates(){renderRates(rQ);toast('Sorted by latest');}
+function sortRates(){renderRates(rQ);toast('Sorted by highest rate');}
 
 
 
