@@ -76,17 +76,20 @@ body{font-family:'Roboto',sans-serif;background:#f5f5f5;color:#212121;font-size:
 .ni-msg{font-size:12px;color:#555;line-height:1.5;}
 .ni-time{font-size:11px;color:#999;margin-top:3px;}
 .nempty{padding:30px;text-align:center;color:#999;font-size:13px;}
-.npopup{position:fixed;top:64px;left:12px;right:12px;background:#fff;border-radius:14px;box-shadow:0 8px 32px #0003,0 0 0 1px #e0e0e0;z-index:500;overflow:hidden;transform:translateY(-120px);opacity:0;transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .25s ease;pointer-events:none;max-width:480px;margin:0 auto;}
-.npopup.in{transform:translateY(0);opacity:1;pointer-events:all;}
-.npbar{height:4px;background:linear-gradient(90deg,#1a73e8,#34a853);}
-.npinner{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;}
-.npicon{font-size:26px;flex-shrink:0;}
+.npopup{position:fixed;top:70px;left:12px;right:12px;background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,0.18),0 0 0 1.5px #e0e0e0;z-index:9999;overflow:hidden;transform:translateY(-140px) scale(0.95);opacity:0;transition:transform .4s cubic-bezier(.34,1.56,.64,1),opacity .3s ease;pointer-events:none;max-width:500px;margin:0 auto;}
+.npopup.in{transform:translateY(0) scale(1);opacity:1;pointer-events:all;}
+.npbar{height:5px;background:linear-gradient(90deg,#1a73e8,#34a853,#fbbc04);background-size:200%;animation:npbar-slide 2s linear infinite;}
+@keyframes npbar-slide{0%{background-position:0%}100%{background-position:200%}}
+.npinner{display:flex;align-items:center;gap:14px;padding:14px 16px;}
+.npicon{font-size:32px;flex-shrink:0;background:#e8f0fe;border-radius:50%;width:48px;height:48px;display:flex;align-items:center;justify-content:center;}
 .npbody{flex:1;min-width:0;}
-.npapp{font-size:10px;font-weight:700;color:#1a73e8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:1px;}
-.nptitle{font-size:13px;font-weight:700;color:#212121;margin-bottom:2px;}
-.npmsg{font-size:12px;color:#555;line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
-.nptime{font-size:10px;color:#aaa;margin-top:3px;}
-.npcls{background:transparent;border:none;color:#bbb;font-size:18px;cursor:pointer;flex-shrink:0;}
+.npapp{font-size:10px;font-weight:700;color:#1a73e8;text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px;}
+.nptitle{font-size:14px;font-weight:700;color:#212121;margin-bottom:3px;}
+.npmsg{font-size:12.5px;color:#444;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.nptime{font-size:10px;color:#aaa;margin-top:4px;}
+.npcls{background:#f5f5f5;border:none;color:#888;font-size:16px;cursor:pointer;flex-shrink:0;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;}
+.npcls:hover{background:#eee;color:#333;}
+@keyframes bell-shake{0%{transform:rotate(0)}15%{transform:rotate(20deg)}30%{transform:rotate(-18deg)}45%{transform:rotate(14deg)}60%{transform:rotate(-10deg)}75%{transform:rotate(6deg)}100%{transform:rotate(0)}}
 .bnav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e0e0e0;display:flex;z-index:100;box-shadow:0 -2px 8px #0001;}
 .bni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;color:#757575;font-size:10px;font-weight:500;transition:color .2s;}
 .bni.active{color:#1a73e8;}
@@ -94,6 +97,9 @@ body{font-family:'Roboto',sans-serif;background:#f5f5f5;color:#212121;font-size:
 .main{padding:0 0 80px 0;}
 .page{display:none;}.page.active{display:block;}
 .sbar2{background:#fff;padding:8px 12px;border-bottom:1px solid #e0e0e0;display:flex;gap:8px;align-items:center;}
+.sort-opt{padding:6px 12px;border-radius:20px;border:1.5px solid #e0e0e0;background:#fff;font-size:12px;cursor:pointer;color:#444;font-family:Roboto,sans-serif;transition:all .2s;}
+.sort-opt:hover{background:#e8f0fe;border-color:#1a73e8;color:#1a73e8;}
+.sort-opt.active{background:#1a73e8;border-color:#1a73e8;color:#fff;font-weight:700;}
 .sinput{flex:1;border:1px solid #ddd;border-radius:20px;padding:7px 14px;font-size:13px;outline:none;background:#f8f9fa;}
 .sinput:focus{border-color:#1a73e8;background:#fff;}
 .lview{background:#fff;}
@@ -346,7 +352,19 @@ body{font-family:'Roboto',sans-serif;background:#f5f5f5;color:#212121;font-size:
     <div class="page active" id="page-list">
       <div class="sbar2">
         <input class="sinput" id="rSearch" placeholder="🔍 Search party, item..." oninput="searchRates(this.value)">
-        <button class="ibtn" style="color:#1a73e8;font-size:22px;" onclick="sortRates()">⇅</button>
+        <button class="ibtn" style="color:#1a73e8;font-size:22px;position:relative;" onclick="toggleSortPanel()" id="sortBtn">⇅</button>
+      </div>
+      <!-- SORT PANEL -->
+      <div id="sortPanel" style="display:none;background:#fff;border-bottom:2px solid #e8f0fe;padding:8px 12px;">
+        <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Sort By</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <button onclick="applySort('rate-high')" class="sort-opt" id="so-rate-high">📈 Rate High→Low</button>
+          <button onclick="applySort('rate-low')"  class="sort-opt" id="so-rate-low">📉 Rate Low→High</button>
+          <button onclick="applySort('date-new')"  class="sort-opt" id="so-date-new">🗓️ Latest Date First</button>
+          <button onclick="applySort('date-old')"  class="sort-opt" id="so-date-old">🗓️ Oldest Date First</button>
+          <button onclick="applySort('name-az')"   class="sort-opt" id="so-name-az">🔤 Party A→Z</button>
+          <button onclick="applySort('name-za')"   class="sort-opt" id="so-name-za">🔤 Party Z→A</button>
+        </div>
       </div>
       <div class="lview">
         
@@ -563,6 +581,7 @@ const DEF_PARTIES = [
   {id:'par20',name:'Indo Paper Craft Private Limited',contact:''},
   {id:'par21',name:'J T Pack Pvt Ltd',contact:''},
   {id:'par22',name:'J.B Traders',contact:''},
+  {id:'par22b',name:'JK Paper Ltd.- Harohalli',contact:''},
   {id:'par23',name:'Kanakadhara Traders',contact:''},
   {id:'par24',name:'Madha Papers',contact:''},
   {id:'par25',name:'Madha Waste Paper Company',contact:''},
@@ -653,6 +672,10 @@ window.onload = async function() {
     // First time seed
     if(!MEM.users.length)  { MEM.users=JSON.parse(JSON.stringify(DEF_USERS));   const o={};MEM.users.forEach(x=>o[x.id]=x);   await fbSet('users',o); }
     if(!MEM.parties.length){ MEM.parties=JSON.parse(JSON.stringify(DEF_PARTIES));const o={};MEM.parties.forEach(x=>o[x.id]=x); await fbSet('parties',o); }
+    // Auto-sync: add any missing parties from DEF_PARTIES into Firebase
+    let _changed=false;
+    DEF_PARTIES.forEach(dp=>{if(!MEM.parties.find(p=>p.id===dp.id)){MEM.parties.push(dp);_changed=true;}});
+    if(_changed){MEM.parties.sort((a,b)=>a.name.localeCompare(b.name));const _o={};MEM.parties.forEach(x=>_o[x.id]=x);await fbSet('parties',_o);}
     // Rates NOT auto-seeded — deleted data stays deleted
     if(!MEM.mats.length)   { MEM.mats=[...DEF_MATS]; await fbSet('mats',MEM.mats); }
 
@@ -665,9 +688,17 @@ window.onload = async function() {
       if(!d||!CU) return;
       const nn=Array.isArray(d)?d:Object.values(d);
       nn.sort((a,b)=>(b.ts||0)-(a.ts||0));
-      const prev=MEM.notifs.length; MEM.notifs=nn;
+      const prevTop = MEM.notifs.length ? MEM.notifs[0] : null;
+      const newTop = nn.length ? nn[0] : null;
+      MEM.notifs=nn;
       updateBadge(); renderNotifPanel();
-      if(nn.length>prev){ const x=nn[0]; if(x&&!x.read) showPopup(x.title,x.msg,x.icon||'📊'); }
+      // Show popup for ALL users when a NEW notification arrives (different ts than before)
+      if(newTop && (!prevTop || newTop.ts !== prevTop.ts)){
+        // Only show if notif is recent (within last 30 seconds) — avoids showing old ones on login
+        if(Date.now() - (newTop.ts||0) < 30000){
+          showPopup(newTop.title, newTop.msg, newTop.icon||'📊');
+        }
+      }
     });
 
     // Check saved session
@@ -776,8 +807,13 @@ function showPopup(title,msg,icon='📊'){
   document.getElementById('npTitle').textContent=title;
   document.getElementById('npMsg').textContent=msg;
   document.getElementById('npTime').textContent=new Date().toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit',hour12:true});
-  document.getElementById('npopup').classList.add('in');
-  clearTimeout(ptimer); ptimer=setTimeout(closePopup,5000);
+  const popup=document.getElementById('npopup');
+  popup.classList.remove('in');
+  setTimeout(()=>popup.classList.add('in'),10);
+  clearTimeout(ptimer); ptimer=setTimeout(closePopup,8000);
+  // shake the bell icon
+  const bell=document.querySelector('.nbell');
+  if(bell){bell.style.animation='none';setTimeout(()=>{bell.style.animation='bell-shake 0.6s ease';},10);}
 }
 function closePopup(){ document.getElementById('npopup').classList.remove('in'); clearTimeout(ptimer); }
 
@@ -812,7 +848,13 @@ function renderRates(q=''){
     });
   }
 
-  d.sort((a,b)=>parseDateStr(b.changeDate)-parseDateStr(a.changeDate)||b.newRate-a.newRate||parseDateStr(b.timestamp)-parseDateStr(a.timestamp));
+  // Apply current sort
+  if(currentSort==='rate-high') d.sort((a,b)=>b.newRate-a.newRate||parseDateStr(b.changeDate)-parseDateStr(a.changeDate));
+  else if(currentSort==='rate-low') d.sort((a,b)=>a.newRate-b.newRate||parseDateStr(b.changeDate)-parseDateStr(a.changeDate));
+  else if(currentSort==='date-new') d.sort((a,b)=>parseDateStr(b.changeDate)-parseDateStr(a.changeDate)||b.newRate-a.newRate);
+  else if(currentSort==='date-old') d.sort((a,b)=>parseDateStr(a.changeDate)-parseDateStr(b.changeDate)||a.newRate-b.newRate);
+  else if(currentSort==='name-az') d.sort((a,b)=>{const pA=MEM.parties.find(p=>p.id===a.partyId);const pB=MEM.parties.find(p=>p.id===b.partyId);return (pA?pA.name:'').localeCompare(pB?pB.name:'');});
+  else if(currentSort==='name-za') d.sort((a,b)=>{const pA=MEM.parties.find(p=>p.id===a.partyId);const pB=MEM.parties.find(p=>p.id===b.partyId);return (pB?pB.name:'').localeCompare(pA?pA.name:'');});
 
   if(!d.length){el.innerHTML='<div style="padding:40px;text-align:center;color:#999;">No results found</div>';return;}
 
@@ -850,7 +892,25 @@ function renderRates(q=''){
   </table></div>`;
 }
 function searchRates(q){rQ=q;renderRates(q);}
-function sortRates(){renderRates(rQ);toast('Sorted by highest rate');}
+let currentSort='rate-high'; // default sort
+
+function toggleSortPanel(){
+  const p=document.getElementById('sortPanel');
+  p.style.display=p.style.display==='none'?'block':'none';
+}
+function applySort(mode){
+  currentSort=mode;
+  // highlight active button
+  document.querySelectorAll('.sort-opt').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('so-'+mode);
+  if(btn)btn.classList.add('active');
+  // close panel
+  document.getElementById('sortPanel').style.display='none';
+  renderRates(rQ);
+  const labels={'rate-high':'Rate High→Low','rate-low':'Rate Low→High','date-new':'Latest Date First','date-old':'Oldest Date First','name-az':'Party A→Z','name-za':'Party Z→A'};
+  toast('Sorted: '+labels[mode]);
+}
+function sortRates(){toggleSortPanel();}
 
 
 
@@ -1057,7 +1117,7 @@ function addRateForParty(){document.getElementById('rateModalTitle').textContent
 function openEditParty(){if(!CU.perms.edit){toast('No edit permission!','err');return;}const p=MEM.parties.find(x=>x.id===curPId);document.getElementById('partyModalTitle').textContent='Edit Party';document.getElementById('pmId').value=p.id;document.getElementById('pmName').value=p.name;document.getElementById('pmContact').value=p.contact||'';document.getElementById('partyModal').classList.add('show');}
 async function deleteParty(){if(!CU.perms.del){toast('No delete permission!','err');return;}const p=MEM.parties.find(x=>x.id===curPId);if(!confirm(`Delete "${p.name}"? All rate records will also be deleted.`))return;MEM.parties=MEM.parties.filter(x=>x.id!==curPId);MEM.rates=MEM.rates.filter(r=>r.partyId!==curPId);await saveParties();await saveRates();closePartyDetail();renderParties(pQ);fillPartyDrop();toast('Deleted','ok');}
 function openAddParty(){if(!CU.perms.add){toast('No add permission!','err');return;}document.getElementById('partyModalTitle').textContent='Add Party';document.getElementById('pmId').value='';document.getElementById('pmName').value='';document.getElementById('pmContact').value='';document.getElementById('partyModal').classList.add('show');}
-async function saveParty(){const name=document.getElementById('pmName').value.trim();if(!name){toast('Name required!','err');return;}const eid=document.getElementById('pmId').value;if(eid){Object.assign(MEM.parties.find(p=>p.id===eid),{name:name.toUpperCase(),contact:document.getElementById('pmContact').value});toast('Updated!','ok');renderPartyBody();}else{MEM.parties.push({id:'par'+Date.now(),name:name.toUpperCase(),contact:document.getElementById('pmContact').value});toast('Added!','ok');}await saveParties();closeModal('partyModal');renderParties(pQ);fillPartyDrop();}
+async function saveParty(){const name=document.getElementById('pmName').value.trim();if(!name){toast('Name required!','err');return;}const eid=document.getElementById('pmId').value;if(eid){Object.assign(MEM.parties.find(p=>p.id===eid),{name:name.toUpperCase(),contact:document.getElementById('pmContact').value});toast('Updated!','ok');renderPartyBody();}else{MEM.parties.push({id:'par'+Date.now(),name:name.toUpperCase(),contact:document.getElementById('pmContact').value});MEM.parties.sort((a,b)=>a.name.localeCompare(b.name));toast('Added!','ok');}await saveParties();closeModal('partyModal');renderParties(pQ);fillPartyDrop();}
 
 // ═══════════════════════════════════════
 //  ACCESS
@@ -1087,7 +1147,7 @@ function renderManage(){
 }
 function showAddParty(){document.getElementById('addPartyF').classList.add('show');document.getElementById('newPartyN').focus();}
 function hideAddParty(){document.getElementById('addPartyF').classList.remove('show');document.getElementById('newPartyN').value='';}
-async function saveNewParty(){const n=document.getElementById('newPartyN').value.trim().toUpperCase();if(!n){toast('Enter name!','err');return;}if(MEM.parties.find(p=>p.name===n)){toast('Already exists!','err');return;}MEM.parties.push({id:'par'+Date.now(),name:n,contact:''});await saveParties();hideAddParty();renderManage();renderParties(pQ);fillPartyDrop();toast('Party added!','ok');}
+async function saveNewParty(){const n=document.getElementById('newPartyN').value.trim().toUpperCase();if(!n){toast('Enter name!','err');return;}if(MEM.parties.find(p=>p.name===n)){toast('Already exists!','err');return;}MEM.parties.push({id:'par'+Date.now(),name:n,contact:''});MEM.parties.sort((a,b)=>a.name.localeCompare(b.name));await saveParties();hideAddParty();renderManage();renderParties(pQ);fillPartyDrop();toast('Party added!','ok');}
 function inlineEditParty(pid){const p=MEM.parties.find(x=>x.id===pid);const row=document.getElementById('mp-'+pid);if(!row)return;row.innerHTML=`<span style="font-size:18px;">🏭</span><input class="mginput" id="ep-${pid}" value="${p.name}" style="flex:1;" onkeydown="if(event.key==='Enter')saveEditParty('${pid}')"><button class="mgisav" onclick="saveEditParty('${pid}')">Save</button><button class="mgicnl" onclick="renderManage()">X</button>`;document.getElementById('ep-'+pid).focus();}
 async function saveEditParty(pid){const v=document.getElementById('ep-'+pid)?.value.trim().toUpperCase();if(!v){toast('Empty!','err');return;}MEM.parties.find(x=>x.id===pid).name=v;await saveParties();renderManage();renderParties(pQ);fillPartyDrop();toast('Updated!','ok');}
 async function delPartyMg(pid){const p=MEM.parties.find(x=>x.id===pid);const rc=MEM.rates.filter(r=>r.partyId===pid).length;if(!confirm(rc>0?`Delete "${p.name}"? Also deletes ${rc} records.`:`Delete "${p.name}"?`))return;MEM.parties=MEM.parties.filter(x=>x.id!==pid);MEM.rates=MEM.rates.filter(r=>r.partyId!==pid);await saveParties();await saveRates();renderManage();renderParties(pQ);renderRates(rQ);fillPartyDrop();toast('Deleted!','ok');}
