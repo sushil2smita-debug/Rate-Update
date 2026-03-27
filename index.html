@@ -97,13 +97,11 @@ body{font-family:'Roboto',sans-serif;background:#f5f5f5;color:#212121;font-size:
 .main{padding:0 0 80px 0;}
 .page{display:none;}.page.active{display:block;}
 .sbar2{background:#fff;padding:8px 12px;border-bottom:1px solid #e0e0e0;display:flex;gap:8px;align-items:center;}
-.sort-opt{padding:6px 12px;border-radius:20px;border:1.5px solid #e0e0e0;background:#fff;font-size:12px;cursor:pointer;color:#444;font-family:Roboto,sans-serif;transition:all .2s;}
-.sort-opt:hover{background:#e8f0fe;border-color:#1a73e8;color:#1a73e8;}
-.sort-opt.active{background:#1a73e8;border-color:#1a73e8;color:#fff;font-weight:700;}
 .sinput{flex:1;border:1px solid #ddd;border-radius:20px;padding:7px 14px;font-size:13px;outline:none;background:#f8f9fa;}
 .sinput:focus{border-color:#1a73e8;background:#fff;}
 .lview{background:#fff;}
 .lhdr{display:grid;padding:10px 12px;border-bottom:2px solid #1a73e8;font-size:11px;font-weight:700;color:#1a73e8;text-transform:uppercase;letter-spacing:.5px;background:#e8f0fe;}
+.rtable thead th[onclick]:hover{background:#d0e4ff;color:#0d47a1;}
 .lrow{display:grid;padding:10px 12px;border-bottom:1px solid #f0f0f0;align-items:center;cursor:pointer;transition:background .15s;}
 .lrow:hover{background:#f5f5f5;}
 .dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:3px;flex-shrink:0;}
@@ -352,19 +350,7 @@ body{font-family:'Roboto',sans-serif;background:#f5f5f5;color:#212121;font-size:
     <div class="page active" id="page-list">
       <div class="sbar2">
         <input class="sinput" id="rSearch" placeholder="🔍 Search party, item..." oninput="searchRates(this.value)">
-        <button class="ibtn" style="color:#1a73e8;font-size:22px;position:relative;" onclick="toggleSortPanel()" id="sortBtn">⇅</button>
-      </div>
-      <!-- SORT PANEL -->
-      <div id="sortPanel" style="display:none;background:#fff;border-bottom:2px solid #e8f0fe;padding:8px 12px;">
-        <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Sort By</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;">
-          <button onclick="applySort('rate-high')" class="sort-opt" id="so-rate-high">📈 Rate High→Low</button>
-          <button onclick="applySort('rate-low')"  class="sort-opt" id="so-rate-low">📉 Rate Low→High</button>
-          <button onclick="applySort('date-new')"  class="sort-opt" id="so-date-new">🗓️ Latest Date First</button>
-          <button onclick="applySort('date-old')"  class="sort-opt" id="so-date-old">🗓️ Oldest Date First</button>
-          <button onclick="applySort('name-az')"   class="sort-opt" id="so-name-az">🔤 Party A→Z</button>
-          <button onclick="applySort('name-za')"   class="sort-opt" id="so-name-za">🔤 Party Z→A</button>
-        </div>
+        <button onclick="cycleSortMode()" id="sortBtn" title="Sort" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;border-radius:8px;border:1.5px solid #e0e0e0;background:#fff;cursor:pointer;min-width:72px;height:38px;"><span style="font-size:13px;color:#1a73e8;font-weight:700;" id="sortLabel">🗓️ Latest</span></button>
       </div>
       <div class="lview">
         
@@ -880,11 +866,11 @@ function renderRates(q=''){
 
   el.innerHTML=`<div class="rtable-wrap"><table class="rtable">
     <thead><tr>
-      <th style="text-align:left;padding-left:16px;">🏭 Party Name</th>
-      <th>● New Rate</th>
+      <th style="text-align:left;padding-left:16px;cursor:pointer;user-select:none;" onclick="colSort('name')">🏭 Party Name <span id="sArrow-name"></span></th>
+      <th style="cursor:pointer;user-select:none;" onclick="colSort('rate')">● New Rate <span id="sArrow-rate"></span></th>
       <th>Old Rate</th>
       <th>± Diff</th>
-      <th>📅 Date</th>
+      <th style="cursor:pointer;user-select:none;" onclick="colSort('date')">📅 Date <span id="sArrow-date">▼</span></th>
       <th>📦 Item</th>
       <th></th>
     </tr></thead>
@@ -892,25 +878,60 @@ function renderRates(q=''){
   </table></div>`;
 }
 function searchRates(q){rQ=q;renderRates(q);}
-let currentSort='rate-high'; // default sort
+const SORT_MODES=[
+  {key:'rate-high', label:'📈 High→Low',  toast:'Rate: High → Low'},
+  {key:'rate-low',  label:'📉 Low→High',  toast:'Rate: Low → High'},
+  {key:'date-new',  label:'🗓️ Latest',    toast:'Date: Latest First'},
+  {key:'date-old',  label:'🗓️ Oldest',    toast:'Date: Oldest First'},
+  {key:'name-az',   label:'🔤 A → Z',     toast:'Party: A → Z'},
+  {key:'name-za',   label:'🔤 Z → A',     toast:'Party: Z → A'},
+];
+let sortIdx=2; // default = date-new
+let currentSort=SORT_MODES[2].key;
 
-function toggleSortPanel(){
-  const p=document.getElementById('sortPanel');
-  p.style.display=p.style.display==='none'?'block':'none';
-}
-function applySort(mode){
-  currentSort=mode;
-  // highlight active button
-  document.querySelectorAll('.sort-opt').forEach(b=>b.classList.remove('active'));
-  const btn=document.getElementById('so-'+mode);
-  if(btn)btn.classList.add('active');
-  // close panel
-  document.getElementById('sortPanel').style.display='none';
+// column header sort
+const COL_SORT_MAP={
+  'name': ['name-az','name-za'],
+  'rate': ['rate-high','rate-low'],
+  'date': ['date-new','date-old'],
+};
+const COL_ARROWS={
+  'rate-high':'▼','rate-low':'▲',
+  'date-new':'▼','date-old':'▲',
+  'name-az':'▼','name-za':'▲',
+};
+function colSort(col){
+  const modes=COL_SORT_MAP[col];
+  // toggle between the two modes for this column
+  currentSort = (currentSort===modes[0]) ? modes[1] : modes[0];
+  // update sortIdx to match
+  sortIdx=SORT_MODES.findIndex(m=>m.key===currentSort);
+  // update button label
+  const sm=SORT_MODES[sortIdx];
+  if(document.getElementById('sortLabel')) document.getElementById('sortLabel').textContent=sm.label;
+  // update arrows — clear all, set active
+  ['name','rate','date'].forEach(c=>{
+    const el=document.getElementById('sArrow-'+c);
+    if(el) el.textContent='';
+  });
+  const activeCol=Object.keys(COL_SORT_MAP).find(c=>COL_SORT_MAP[c].includes(currentSort));
+  if(activeCol){
+    const el=document.getElementById('sArrow-'+activeCol);
+    if(el) el.textContent=' '+COL_ARROWS[currentSort];
+  }
   renderRates(rQ);
-  const labels={'rate-high':'Rate High→Low','rate-low':'Rate Low→High','date-new':'Latest Date First','date-old':'Oldest Date First','name-az':'Party A→Z','name-za':'Party Z→A'};
-  toast('Sorted: '+labels[mode]);
+  toast('Sorted: '+sm.toast);
 }
-function sortRates(){toggleSortPanel();}
+function cycleSortMode(){
+  sortIdx=(sortIdx+1)%SORT_MODES.length;
+  currentSort=SORT_MODES[sortIdx].key;
+  document.getElementById('sortLabel').textContent=SORT_MODES[sortIdx].label;
+  renderRates(rQ);
+  toast('Sorted: '+SORT_MODES[sortIdx].toast);
+}
+function toggleSortPanel(){cycleSortMode();}
+function applySort(mode){currentSort=mode;renderRates(rQ);}
+function sortRates(){cycleSortMode();}
 
 
 
